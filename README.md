@@ -2,8 +2,7 @@
 
 *Group 13's Data Visualization Project*
 
-Data Set - Wine Reviews
-[Data Set Source](https://www.kaggle.com/zynicide/wine-reviews)
+[Data Set](https://www.kaggle.com/zynicide/wine-reviews) - Wine Reviews
 
 ## Objectives
 
