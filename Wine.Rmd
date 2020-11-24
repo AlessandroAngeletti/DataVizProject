@@ -23,11 +23,10 @@ library(skimr)
 
 why are we visualizing this dataset? what do we want to get out of it?
 
-## 2 Load & Inspect Data
-
+## 2 Load & inspect Data
 We would like to inspect the dataset in the following orders:
 2.1 missing, empty, and duplicated values;
-2.2 data type;
+2.2 data types;
 2.3 weird values, errors, and outliers.
 
 ```{r load / inspect data, message = FALSE, warning = FALSE}
@@ -55,47 +54,56 @@ ggplot(original_data, aes(x = price)) + geom_boxplot()
 ggplot(original_data, aes(x = price)) + geom_histogram(binwidth = 20)
 ggplot(original_data, aes(x = points)) + geom_boxplot()
 ```
+
 Through the inspection, we find:
 
 > *Missing, empty, and duplicated values:*
+- `country`: 63 blanks, why missing? should we fix it or not? how to fix it?
+- `designation`: 
+- `region_1`:
+- `region_2`:
+- `taster_name`:
+- `taster_twitter_handle`:
+- `variety`:
+- No duplicates.
 
+> *data type:*
+- `country`: should be a catergorical variable.
+- 
 
+> *weird values, errors, and outliers:*
+- `price` appears to have an outlier.
+- `points` falls in a reasonal range between 80 and 100, which does not need to be further modified.
 
+## 3 Clean data
+This section will follow the order of the previous section and aim to fix the flaws to ease the further visualization.
+
+### 3.1 Resolve the missing values 
 ```{r clean data 1, message = FALSE, warning = FALSE}
-#List of all wineries with for entries with no country.
-data_process_1 <- original_data %>% 
+# While trying to fix the missing countries with another locator
+# We found that all observations missing country values have unique winery values
+# List of all wineries for entries with no country.
+wineries_na_country <- original_data %>% 
   filter(is.na(country)) %>% 
   summarise(winery) %>% 
   distinct()
 
-#New list of missing wineries with existing countries.
-data_process_2 <- inner_join(original_data, data_process_1, by = "winery") %>%
+# As some of the wineries in the above list have countries in other entries
+# We can use the above list to fill the missing countries with the same wineries
+# And the missing countries to the remaining incomparable wineries will be manually searched
+wineries_countrymatch <- inner_join(original_data, wineries_na_country, by = "winery") %>%
   group_by(winery, country) %>% 
-  summarise(country,winery) %>% 
+  summarise(country, winery) %>% 
   distinct()
 
-country_list <- original_data %>% 
-  summarise(country) %>% 
-  distinct()
+# Load the manually completed list of countries with wineries
+wineries_countryfinal <- read.csv("Winery_Country_List.csv", header = TRUE)
 
-winery_list <- original_data %>% 
-  group_by(winery) %>% 
-  summarise(winery) %>% 
-  distinct()
+# Fill the missing countries with our final list by wineries 
+original_data$country[is.na(original_data$country)] <- wineries_countryfinal$country[match(original_data$winery, wineries_countryfinal$winery)][which(is.na(original_data$country))]
 
-data_process_3 <- data_process_2 %>% 
-  na.omit()
-
-clean_data_1 <- original_data %>% 
-  mutate(country = case_when( 
-    winery %in% data_process_3$winery ~ data_process_3$country,
-    TRUE~country
-  ))
-
-data_process_4 <- left_join(data_process_1, data_process_2, by = "winery") %>%
-  group_by(winery, country) %>% 
-  summarise(country,winery) %>% 
-  distinct()
+# Check the new status of missing values
+skim(original_data$country)
 
 ```
 
