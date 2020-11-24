@@ -32,7 +32,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
+```{r}
 
 original_data <- vroom::vroom("winemag-data-130k-v2.csv")
 
@@ -42,8 +42,8 @@ describe(original_data)
 
 head(original_data)
 
-original_data_process<-original_data %>% 
-  clean_names(original_data_process)
+original_data %>% 
+  clean_names(original_data)
 
 
 ```
@@ -77,12 +77,20 @@ winery_list <- original_data %>%
   summarise(winery) %>% 
   distinct()
 
+data_process_3 <- data_process_2 %>% 
+  na.omit()
+
+clean_data_1 <- original_data %>% 
+  mutate(country = case_when( 
+    winery %in% data_process_3$winery ~ data_process_3$country,
+    TRUE~country
+  ))
+
+
 data_process_4 <- left_join(data_process_1, data_process_2, by = "winery") %>%
   group_by(winery, country) %>% 
   summarise(country,winery) %>% 
   distinct()
-
-
 
 ```
 
