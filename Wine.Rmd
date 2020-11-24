@@ -55,6 +55,7 @@ ggplot(original_data, aes(x = price)) + geom_boxplot()
 ggplot(original_data, aes(x = price)) + geom_histogram(binwidth = 20)
 ggplot(original_data, aes(x = points)) + geom_boxplot()
 ```
+
 Through the inspection, we find:
 
 > *Missing, empty, and duplicated values:*
