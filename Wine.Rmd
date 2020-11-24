@@ -1,20 +1,13 @@
 ---
 title: "Wine"
-author: "Chris Lewis"
+author: "Study Group 13"
 date: "24/11/2020"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-
-
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-#The relevant libraries are loaded
+# Load the relevant libraries
 library(tidyverse)
 library(lubridate)
 library(mice) 
@@ -26,36 +19,49 @@ library(readxl)
 library(skimr)
 ```
 
-## R Markdown
+## 1 Background
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+why are we visualizing this dataset? what do we want to get out of it?
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## 2 Load & Inspect Data
 
-```{r}
+We would like to inspect the dataset in the following orders:
+2.1 missing, empty, and duplicated values;
+2.2 data type;
+2.3 weird values, errors, and outliers.
 
-original_data <- vroom::vroom("winemag-data-130k-v2.csv")
+```{r load / inspect data, message = FALSE, warning = FALSE}
+# 1. Load the data
+original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>% 
+  clean_names() %>% 
+  select(-x1) # Discard an irrelevant column
 
+# Take a look at the raw data
+head(original_data)
+
+# Check for missing values
 skim(original_data)
 
 describe(original_data) 
 
-head(original_data)
+# Check for duplicates
+get_dupes(original_data)
 
-original_data %>% 
-  clean_names(original_data)
+# Check data types
+glimpse(original_data)
 
-
+# Check for errors and outliers
+ggplot(original_data, aes(x = price)) + geom_boxplot()
+ggplot(original_data, aes(x = price)) + geom_histogram(binwidth = 20)
+ggplot(original_data, aes(x = points)) + geom_boxplot()
 ```
+Through the inspection, we find:
 
-```{r}
+> *Missing, empty, and duplicated values:*
 
-ggplot(original_data, aes(x=price)) + geom_boxplot()
-ggplot(original_data, aes(x=price)) +geom_histogram(binwidth=20)
 
-```
 
-```{r}
+```{r clean data 1, message = FALSE, warning = FALSE}
 #List of all wineries with for entries with no country.
 data_process_1 <- original_data %>% 
   filter(is.na(country)) %>% 
@@ -85,7 +91,6 @@ clean_data_1 <- original_data %>%
     winery %in% data_process_3$winery ~ data_process_3$country,
     TRUE~country
   ))
-
 
 data_process_4 <- left_join(data_process_1, data_process_2, by = "winery") %>%
   group_by(winery, country) %>% 
