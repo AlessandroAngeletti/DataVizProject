@@ -64,7 +64,7 @@ Through the inspection, we find:
 - `region_2`:
 - `taster_name`:
 - `taster_twitter_handle`:
-- `variety`:
+- `variety`: 1 blank, 
 - No duplicates.
 
 > *data type:*
@@ -81,7 +81,7 @@ This section will follow the order of the previous section and aim to fix the fl
 ### 3.1 Resolve the missing values 
 ```{r clean data 1, message = FALSE, warning = FALSE}
 # While trying to fix the missing countries with another locator
-# We found that all observations missing country values have unique winery values
+# We find that all observations missing country values have unique winery values
 # List of all wineries for entries with no country.
 wineries_na_country <- original_data %>% 
   filter(is.na(country)) %>% 
@@ -99,11 +99,26 @@ wineries_countrymatch <- inner_join(original_data, wineries_na_country, by = "wi
 # Load the manually completed list of countries with wineries
 wineries_countryfinal <- read.csv("Winery_Country_List.csv", header = TRUE)
 
+# Create a copy of the raw data to clean
+clean1 <- original_data
+
 # Fill the missing countries with our final list by wineries 
-original_data$country[is.na(original_data$country)] <- wineries_countryfinal$country[match(original_data$winery, wineries_countryfinal$winery)][which(is.na(original_data$country))]
+clean1$country[is.na(clean1$country)] <- wineries_countryfinal$country[match(clean1$winery, wineries_countryfinal$winery)][which(is.na(clean1$country))]
 
 # Check the new status of missing values
-skim(original_data$country)
+skim(clean1$country)
+
+# Find out the one missing value in variety(grape type)
+variety_na <- clean1 %>% 
+  filter(is.na(variety))
+
+# While the other information for this observation is incomparable
+# We find a trace of grape type in the description
+# The missing grape type is "Petite Sirah"
+clean1 <- clean1 %>% 
+  mutate(variety = case_when(title == "Carmen 1999  (Maipo Valley)" ~ "Petite Sirah",
+                            TRUE ~ variety ))
+skim(clean1$variety)
 
 ```
 
