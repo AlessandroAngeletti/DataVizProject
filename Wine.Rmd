@@ -9,6 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #The relevant libraries are loaded
@@ -47,7 +50,39 @@ original_data_process<-original_data %>%
 
 ```{r}
 
-filter(or)
+ggplot(original_data, aes(x=price)) + geom_boxplot()
+ggplot(original_data, aes(x=price)) +geom_histogram(binwidth=20)
+
+```
+
+```{r}
+#List of all wineries with for entries with no country.
+data_process_1 <- original_data %>% 
+  filter(is.na(country)) %>% 
+  summarise(winery) %>% 
+  distinct()
+
+#New list of missing wineries with existing countries.
+data_process_2 <- inner_join(original_data, data_process_1, by = "winery") %>%
+  group_by(winery, country) %>% 
+  summarise(country,winery) %>% 
+  distinct()
+
+country_list <- original_data %>% 
+  summarise(country) %>% 
+  distinct()
+
+winery_list <- original_data %>% 
+  group_by(winery) %>% 
+  summarise(winery) %>% 
+  distinct()
+
+data_process_4 <- left_join(data_process_1, data_process_2, by = "winery") %>%
+  group_by(winery, country) %>% 
+  summarise(country,winery) %>% 
+  distinct()
+
+
 
 ```
 
