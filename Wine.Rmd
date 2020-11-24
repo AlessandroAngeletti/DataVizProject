@@ -1,0 +1,96 @@
+---
+title: "Wine"
+author: "Chris Lewis"
+date: "24/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#The relevant libraries are loaded
+library(tidyverse)
+library(lubridate)
+library(mice) 
+library(VIM)
+library(dplyr)
+library(Hmisc)
+library(janitor)
+library(readxl)
+library(skimr)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+original_data <- vroom::vroom("winemag-data-130k-v2.csv")
+
+skim(original_data)
+
+describe(original_data) 
+
+head(original_data)
+
+original_data %>% 
+  clean_names(original_data)
+
+
+```
+
+```{r}
+
+ggplot(original_data, aes(x=price)) + geom_boxplot()
+ggplot(original_data, aes(x=price)) +geom_histogram(binwidth=20)
+
+```
+
+```{r}
+#List of all wineries with for entries with no country.
+data_process_1 <- original_data %>% 
+  filter(is.na(country)) %>% 
+  summarise(winery) %>% 
+  distinct()
+
+#New list of missing wineries with existing countries.
+data_process_2 <- inner_join(original_data, data_process_1, by = "winery") %>%
+  group_by(winery, country) %>% 
+  summarise(country,winery) %>% 
+  distinct()
+
+country_list <- original_data %>% 
+  summarise(country) %>% 
+  distinct()
+
+winery_list <- original_data %>% 
+  group_by(winery) %>% 
+  summarise(winery) %>% 
+  distinct()
+
+data_process_3 <- data_process_2 %>% 
+  na.omit()
+
+clean_data_1 <- original_data %>% 
+  mutate(country = case_when( 
+    winery %in% data_process_3$winery ~ data_process_3$country,
+    TRUE~country
+  ))
+
+
+data_process_4 <- left_join(data_process_1, data_process_2, by = "winery") %>%
+  group_by(winery, country) %>% 
+  summarise(country,winery) %>% 
+  distinct()
+
+```
+
