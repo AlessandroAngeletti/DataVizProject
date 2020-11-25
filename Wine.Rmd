@@ -1,12 +1,21 @@
 ---
-title: "Wine"
-author: "Study Group 13"
-date: "24/11/2020"
-output: html_document
+title: "Session 7 Clustering Workshop"
+author: "Group 13 - Alessandro Angeletti, Zichen Wang, Johanna Jeffery, Nitya Chopra and Christopher Lewis"
+date: "`r Sys.Date()`"
+output: 
+    html_document:
+      number_sections: true
+      highlight: haddock
+      theme: spacelab
+      toc: yes
+      toc_depth: 2
+      toc_float:
+        collapsed: false
+      fontzize: 10 pt
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 # Load the relevant libraries
 library(tidyverse)
 library(lubridate)
@@ -19,17 +28,19 @@ library(readxl)
 library(skimr)
 ```
 
-## 1 Background
+# Background
 
 why are we visualizing this dataset? what do we want to get out of it?
 
-## 2 Load & inspect Data
-We would like to inspect the dataset in the following orders:
-2.1 missing, empty, and duplicated values;
-2.2 data types;
-2.3 weird values, errors, and outliers.
+# Load & inspect Data
 
-```{r load / inspect data, message = FALSE, warning = FALSE}
+We would like to inspect the dataset in the following orders:
+
+1) missing, empty, and duplicated values;
+1) data types;
+1) weird values, errors, and outliers.
+
+```{r, load / inspect data, cache = TRUE}
 # 1. Load the data
 original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>% 
   clean_names() %>% 
@@ -39,8 +50,7 @@ original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>%
 head(original_data)
 
 # Check for missing values
-skim(original_data)
-
+#skim(original_data)
 describe(original_data) 
 
 # Check for duplicates
@@ -50,14 +60,18 @@ get_dupes(original_data)
 glimpse(original_data)
 
 # Check for errors and outliers
-ggplot(original_data, aes(x = price)) + geom_boxplot()
-ggplot(original_data, aes(x = price)) + geom_histogram(binwidth = 20)
-ggplot(original_data, aes(x = points)) + geom_boxplot()
+ggplot(original_data, aes(x = price)) +
+  geom_boxplot()
+ggplot(original_data, aes(x = price)) +
+  geom_histogram(binwidth = 20)
+ggplot(original_data, aes(x = points)) +
+  geom_boxplot()
 ```
 
 Through the inspection, we find:
 
 > *Missing, empty, and duplicated values:*
+
 - `country`: 63 blanks, why missing? should we fix it or not? how to fix it?
 - `designation`: 
 - `region_1`:
@@ -65,21 +79,24 @@ Through the inspection, we find:
 - `taster_name`:
 - `taster_twitter_handle`:
 - `variety`: 1 blank, 
-- No duplicates.
 
 > *data type:*
+
 - `country`: should be a catergorical variable.
 - 
 
 > *weird values, errors, and outliers:*
+
 - `price` appears to have an outlier.
 - `points` falls in a reasonal range between 80 and 100, which does not need to be further modified.
 
-## 3 Clean data
+## Clean data
+
 This section will follow the order of the previous section and aim to fix the flaws to ease the further visualization.
 
-### 3.1 Resolve the missing values 
-```{r clean data 1, message = FALSE, warning = FALSE}
+### Resolve the missing values 
+
+```{r, clean data 1}
 # While trying to fix the missing countries with another locator
 # We find that all observations missing country values have unique winery values
 # List of all wineries for entries with no country.
@@ -119,6 +136,5 @@ clean1 <- clean1 %>%
   mutate(variety = case_when(title == "Carmen 1999  (Maipo Valley)" ~ "Petite Sirah",
                             TRUE ~ variety ))
 skim(clean1$variety)
-
 ```
 
