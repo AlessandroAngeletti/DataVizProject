@@ -26,6 +26,8 @@ library(Hmisc)
 library(janitor)
 library(readxl)
 library(skimr)
+library(ggridges)
+library(ggplot2)
 ```
 
 # Background
@@ -40,7 +42,7 @@ We would like to inspect the dataset in the following orders:
 1) data types;
 1) weird values, errors, and outliers.
 
-```{r, load / inspect data, cache = TRUE}
+```{r}
 # 1. Load the data
 original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>% 
   clean_names() %>% 
@@ -134,7 +136,165 @@ variety_na <- clean1 %>%
 # The missing grape type is "Petite Sirah"
 clean1 <- clean1 %>% 
   mutate(variety = case_when(title == "Carmen 1999  (Maipo Valley)" ~ "Petite Sirah",
-                            TRUE ~ variety ))
+                            TRUE ~ variety 
+                            ),
+         region_1 = case_when(province == "Douro" ~ "Trás-os-Montes",
+                              TRUE ~ region_2)
+         )
+
 skim(clean1$variety)
+
+clean2 <- clean1 %>% 
+  select(-c(region_2, taster_twitter_handle)) %>% 
+  filter(
+    !is.na(price),
+    !is.na(points),
+    !is.na(country)
+  ) %>% 
+  mutate(
+    company = str_extract(title, '\\D*(?=\\d)'),
+    year = as.double(trimws(gsub("[^0-9]", "",  title))),
+    year = case_when(
+      year < 1934 ~ 0,
+      year > 2020 ~ 0,
+      TRUE ~ year
+      )
+     # Missing the info after the numbers
+    )
+
+View(clean2)
+describe(clean2)
+```
+
+## Exploratory Data Analysis
+
+```{r}
+# Scaled Histogram of prices
+points_hist <- clean2 %>% 
+  ggplot() +
+  geom_histogram(aes(x = points))
+
+points_hist
+
+# Scaled Distribution of prices
+price_hist <- clean2 %>% 
+  filter(price < 85) %>% 
+  ggplot() +
+  geom_histogram(aes(x = price))
+
+price_hist
+
+# Scatter plot of Price v Points
+price_points <- clean2 %>% 
+  filter(price < 85) %>% 
+  ggplot(aes(x = price, y = points)) +
+  geom_point() + 
+  geom_smooth(method = lm)
+
+price_points
+
+ReviewData <- clean2 %>% 
+  group_by(country) %>% 
+  summarise(tot = n()) %>% 
+  arrange(desc(tot)) %>% 
+  mutate(percent_of_reviews = round(tot / sum(tot), digits = 4),
+         cumsum_reviews = cumsum(percent_of_reviews))
+
+ReviewData
+
+dist_plot <- ReviewData %>% 
+  head(5) %>%
+  mutate(country = as_factor(country)) %>% 
+  ggplot(aes(x = country, y = tot)) +
+  geom_col(stat = "identity", fill = "#524c84") + 
+  geom_text(aes(label = sprintf("%.0f%%", 100 * percent_of_reviews), y = tot + 2000)) +
+  labs(x = "",
+       y = "Total Number of Reviews",
+       title = "US Wines Dominate Dataset!",
+       subtitle = "Distribution of Wine Reviews by Top 5 Countries") +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+
+dist_plot
+
+avg_score <- clean2 %>% 
+  group_by(country) %>%
+  summarise(
+    avg_score = mean(points),
+    count = n()
+  ) %>%
+  #filter(count > 50) %>% 
+  arrange(desc(avg_score)) %>%
+  head(10)
+
+avg_score_plot <- avg_score %>% 
+  ggplot(aes(x = reorder(country, -avg_score), y = avg_score)) + 
+  geom_bar(stat = "identity", fill = "#524c84") + 
+  coord_cartesian(ylim = c(88, 92)) + 
+  labs(
+    y = "Average Rating",
+    x = "",
+    title = "England Has The Highest Average Rated Wines!",
+    subtitle = "Top 10 Countries by Average Rating"
+    ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+
+avg_score_plot
+
+select_c <- c("Engalnd",
+              "Austria",
+              "Germany",
+              "Canada",
+              "Hungary",
+              "France",
+              "Italy",
+              "Australia",
+              "US",
+              "Israel")
+
+violin_plot <- clean2 %>% 
+  group_by(country) %>%
+  filter(country %in% select_c) %>%
+  ggplot(aes(x = points,
+             y = country,
+             fill = country)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+violin_plot
+
+score_by_country <- clean2 %>% 
+  arrange() %>% 
+  filter(country %in% select_c) %>% 
+  ggplot(aes(x = points, y = reorder(country, points, FUN = median))) +
+  geom_boxplot() +
+  stat_summary(geom = "point",
+               color = "red") +
+  labs(
+    y = "",
+    x = "Points",
+    title = "Germany has the Highest Median Score!",
+    subtitle = "Distribution of Scores by Country"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+  
+score_by_country
+
+df <- clean2 %>% 
+  filter(!is.na(price))%>% 
+  select(price) %>%  
+  table()
+df1 <- prop.table(df) 
+
+paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
 
