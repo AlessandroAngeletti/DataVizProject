@@ -28,6 +28,8 @@ library(readxl)
 library(skimr)
 library(ggridges)
 library(ggplot2)
+library(tm)
+library(wordcloud)
 ```
 
 # Background
@@ -166,6 +168,47 @@ View(clean2)
 describe(clean2)
 ```
 
+### Cleaning Description
+
+```{r}
+input_words <- clean2$description[clean2$country == "France"]
+
+input_words <- VectorSource(input_words)
+input_words <- VCorpus(input_words)
+
+irrelevant_words <- c("wine", "winery", "it", "winemaking", "winemark", "without", "alcohol", "although", "across", "age", "almost", "along", "also", "amount", "alongsid", "anoth", "approach", "around", "back", "background", "basic", "barrel", "big", "bit", "blend", "bottl", "bouquet", "cellar", "continu", "core", "cut", "develop", "display", "end", "extra",  "drink", "drinking", "doesnt", "element", "enough", "featur", "feel", "fill", "find", "first", "final", "finish", "focus", "follow", "food", "forward", "frame", "front", "get", "give", "given", "glass", "grape", "here", "hint", "highlight", "hold", "just", "keep", "lack", "last", "layer", "length", "lift", "littl", "made", "make", "mark", "medium", "mix", "month", "mouth", "much", "name", "need", "new", "next", "nose", "now", "offer", "one", "open", "overal", "pair", "part", "pack", "play", "price", "produc", "provid", "quick", "quit", "rather", "region",  "remain", "result", "reveal", "right", "round", "run", "select", "seem", "set", "show", "soon", "side", "sip", "small", "slight", "somewhat", "start", "suggest", "suppl", "support", "take", "that", "there", "though", "time", "togeth", "top", "toward", "two", "turn", "use", "variety", "vine", "vineyard", "vintag", "way", "weight", "will", "winemak", "wineri", "year", "yet", "<e2><80><93>", "<c3><a8>dr", "<c3><a9>" ,"aroma", "flavor")
+
+clean_words <- function(inside){
+  inside <- tm_map(inside, removePunctuation)
+  inside <- tm_map(inside, removeNumbers)
+  inside <- tm_map(inside, content_transformer(tolower))
+  inside <- tm_map(inside, removeWords, stopwords("en"))
+  inside <- tm_map(inside, stemDocument)
+  inside <- tm_map(inside, removeWords, irrelevant_words)
+  inside <- tm_map(inside, stripWhitespace)
+  return(inside)
+}
+
+out_clean_words <- clean_words(input_words)
+
+ocw_tdm <- TermDocumentMatrix(out_clean_words)
+
+top_10_words <- findFreqTerms(ocw_tdm, lowfreq = 3300)
+paste0("The Top 10 Words Associated to Wines in ", "France" , " are: ")
+print(top_10_words)
+
+ocw_m <- as.matrix(ocw_tdm)
+aa <- rowSums(ocw_m)
+aa <- sort(aa, decreasing = TRUE)
+
+aa_df <- data.frame(words = names(aa),
+                    freq = aa)
+
+word_cloud <- aa_df %>%
+  ggplot(aes(x = factor(words, levels = words[order(-freq)]), y = freq)) +
+  wordcloud(aa_df$words, aa_df$freq, max.words = 50, color = "red")
+```
+
 ## Exploratory Data Analysis
 
 ```{r}
@@ -270,7 +313,6 @@ violin_plot <- clean2 %>%
 violin_plot
 
 score_by_country <- clean2 %>% 
-  arrange() %>% 
   filter(country %in% select_c) %>% 
   ggplot(aes(x = points, y = reorder(country, points, FUN = median))) +
   geom_boxplot() +
@@ -288,6 +330,48 @@ score_by_country <- clean2 %>%
   )
   
 score_by_country
+
+avg_price_all <- clean2 %>% 
+  group_by(country) %>%
+  summarise(
+    avg_price = mean(price),
+    count = n()
+  ) %>%
+  filter(count > 50) %>% 
+  arrange(desc(avg_price))
+
+select_p <- c("England",
+              "US",
+              "Canada",
+              "Switzerland",
+              "Italy",
+              "Lebanon",
+              "Israel",
+              "Hungary",
+              "Germany",
+              "Austria"
+              )
+
+price_by_country <- clean2 %>% 
+  filter(price < 155) %>% 
+  group_by(country) %>% 
+  filter(country %in% select_p) %>% 
+  ggplot(aes(x = price, y = reorder(country, price, FUN = mean), color = country)) +
+  geom_violin() +
+  stat_summary(geom = "point",
+               color = "red") +
+  labs(
+    y = "",
+    x = "Price",
+    title = "England has the Most Expensive Mean Wine!",
+    subtitle = "Distribution of Prices Country"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+  
+price_by_country
 
 df <- clean2 %>% 
   filter(!is.na(price))%>% 
