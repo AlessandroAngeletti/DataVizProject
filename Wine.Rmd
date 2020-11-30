@@ -228,8 +228,8 @@ price_hist
 
 # Scatter plot of Price v Points
 price_points <- clean2 %>% 
-  #filter(price < 85) %>% 
-  ggplot(aes(x = scale(price), y = scale(points))) +
+  filter(price < 155) %>% 
+  ggplot(aes(x = (price), y = (points))) +
   geom_point() + 
   geom_smooth(method = lm)
 
