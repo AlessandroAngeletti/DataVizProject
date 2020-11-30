@@ -54,7 +54,6 @@ original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>%
 head(original_data)
 
 # Check for missing values
-#skim(original_data)
 describe(original_data) 
 
 # Check for duplicates
@@ -165,7 +164,7 @@ clean2 <- clean1 %>%
     )
 
 View(clean2)
-describe(clean2)
+#describe(clean2)
 ```
 
 ### Cleaning Description
@@ -197,7 +196,7 @@ top_10_words <- findFreqTerms(ocw_tdm, lowfreq = 3300)
 paste0("The Top 10 Words Associated to Wines in ", "France" , " are: ")
 print(top_10_words)
 
-ocw_m <- as.matrix(ocw_tdm)
+ocw_m <- as.matrix(ocw_tdm) 
 aa <- rowSums(ocw_m)
 aa <- sort(aa, decreasing = TRUE)
 
