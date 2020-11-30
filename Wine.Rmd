@@ -163,7 +163,7 @@ clean2 <- clean1 %>%
      # Missing the info after the numbers
     )
 
-View(clean2)
+#View(clean2)
 #describe(clean2)
 ```
 
@@ -175,7 +175,7 @@ input_words <- clean2$description[clean2$country == "France"]
 input_words <- VectorSource(input_words)
 input_words <- VCorpus(input_words)
 
-irrelevant_words <- c("wine", "winery", "it", "winemaking", "winemark", "without", "alcohol", "although", "across", "age", "almost", "along", "also", "amount", "alongsid", "anoth", "approach", "around", "back", "background", "basic", "barrel", "big", "bit", "blend", "bottl", "bouquet", "cellar", "continu", "core", "cut", "develop", "display", "end", "extra",  "drink", "drinking", "doesnt", "element", "enough", "featur", "feel", "fill", "find", "first", "final", "finish", "focus", "follow", "food", "forward", "frame", "front", "get", "give", "given", "glass", "grape", "here", "hint", "highlight", "hold", "just", "keep", "lack", "last", "layer", "length", "lift", "littl", "made", "make", "mark", "medium", "mix", "month", "mouth", "much", "name", "need", "new", "next", "nose", "now", "offer", "one", "open", "overal", "pair", "part", "pack", "play", "price", "produc", "provid", "quick", "quit", "rather", "region",  "remain", "result", "reveal", "right", "round", "run", "select", "seem", "set", "show", "soon", "side", "sip", "small", "slight", "somewhat", "start", "suggest", "suppl", "support", "take", "that", "there", "though", "time", "togeth", "top", "toward", "two", "turn", "use", "variety", "vine", "vineyard", "vintag", "way", "weight", "will", "winemak", "wineri", "year", "yet", "<e2><80><93>", "<c3><a8>dr", "<c3><a9>" ,"aroma", "flavor")
+irrelevant_words <- c("wine", "winery", "it", "green", "winemaking", "winemark", "without", "alcohol", "although", "across", "age", "almost", "along", "also", "amount", "alongsid", "anoth", "approach", "around", "back", "background", "basic", "barrel", "big", "bit", "blend", "bottl", "bouquet", "cellar", "continu", "core", "cut", "develop", "display", "end", "extra",  "drink", "drinking", "doesnt", "element", "enough", "featur", "feel", "fill", "find", "first", "final", "finish", "focus", "follow", "food", "forward", "frame", "front", "get", "give", "given", "glass", "grape", "here", "hint", "highlight", "hold", "just", "keep", "lack", "last", "layer", "length", "lift", "littl", "made", "make", "mark", "medium", "mix", "month", "mouth", "much", "name", "need", "new", "next", "nose", "note", "now", "offer", "one", "open", "overal", "pair", "part", "pack", "play", "price", "produc", "provid", "quick", "quit", "palat", "rather", "region",  "remain", "result", "reveal", "right", "round", "run", "select", "seem", "set", "show", "soon", "side", "sip", "small", "slight", "somewhat", "start", "suggest", "suppl", "support", "take", "that", "there", "though", "time", "togeth", "top", "toward", "two", "turn", "use", "variety", "vine", "vineyard", "vintag", "way", "weight", "will", "winemak", "wineri", "year", "yet", "<e2><80><93>", "<c3><a8>dr", "<c3><a9>" ,"aroma", "flavor", "autolyt", "serious", "reson", "long", "red", "black")
 
 clean_words <- function(inside){
   inside <- tm_map(inside, removePunctuation)
@@ -205,7 +205,7 @@ aa_df <- data.frame(words = names(aa),
 
 word_cloud <- aa_df %>%
   ggplot(aes(x = factor(words, levels = words[order(-freq)]), y = freq)) +
-  wordcloud(aa_df$words, aa_df$freq, max.words = 50, color = "red")
+  wordcloud(aa_df$words, aa_df$freq, max.words = 10, color = "red")
 ```
 
 ## Exploratory Data Analysis
@@ -228,8 +228,8 @@ price_hist
 
 # Scatter plot of Price v Points
 price_points <- clean2 %>% 
-  filter(price < 85) %>% 
-  ggplot(aes(x = price, y = points)) +
+  #filter(price < 85) %>% 
+  ggplot(aes(x = scale(price), y = scale(points))) +
   geom_point() + 
   geom_smooth(method = lm)
 
@@ -342,13 +342,13 @@ avg_price_all <- clean2 %>%
 select_p <- c("England",
               "US",
               "Canada",
-              "Switzerland",
               "Italy",
               "Lebanon",
               "Israel",
               "Hungary",
               "Germany",
-              "Austria"
+              "Austria",
+              "France"
               )
 
 price_by_country <- clean2 %>% 
@@ -379,5 +379,11 @@ df <- clean2 %>%
 df1 <- prop.table(df) 
 
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
+```
+
+# Regressions
+
+```{r}
+
 ```
 
