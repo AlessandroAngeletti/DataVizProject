@@ -122,3 +122,47 @@ skim(clean1$variety)
 
 ```
 
+# Desciribing Scores
+
+```{r}
+dataAnalysis <- clean2 %>% 
+  filter(price < 156,
+         country %in% c("Spain", "Italy", "Portugal", "US"),
+         year > 0
+         ) %>% 
+  mutate(
+    points = as.integer(points),
+    price = as.integer(price)
+  )
+
+ols_model <- lm(points ~ price, dataAnalysis)
+summary(ols_model)
+
+# R-Squared of: 0.2815
+
+ols_model2 <- lm(points ~ price + I(price^2), dataAnalysis)
+summary(ols_model2)
+
+# R-Squared of: 0.3268 
+
+anova(ols_model, ols_model2)
+# Our model improved as the p-value (2.2e-16) is far below alpha
+
+ols_model3 <- lm(points ~ price + log(price) + country, dataAnalysis)
+summary(ols_model3)
+
+# R-Squared of: 0.3381
+
+ols_model4 <- lm(points ~ price + I(price^2) + country + year, dataAnalysis)
+summary(ols_model4)
+
+# R-Squared of: 0.3437
+
+ols_model5 <- lm(points ~ ., dataAnalysis)
+summary(ols_model5)
+
+anova(ols_model, ols_model2, ols_model3, ols_model4)
+# Our model improved as the p-value (2.2e-16) is far below alpha
+
+
+```
