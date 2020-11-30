@@ -1,12 +1,21 @@
 ---
-title: "Wine"
-author: "Study Group 13"
-date: "24/11/2020"
-output: html_document
+title: "Session 7 Clustering Workshop"
+author: "Group 13 - Alessandro Angeletti, Zichen Wang, Johanna Jeffery, Nitya Chopra and Christopher Lewis"
+date: "`r Sys.Date()`"
+output: 
+    html_document:
+      number_sections: true
+      highlight: haddock
+      theme: spacelab
+      toc: yes
+      toc_depth: 2
+      toc_float:
+        collapsed: false
+      fontzize: 10 pt
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 # Load the relevant libraries
 library(tidyverse)
 library(lubridate)
@@ -17,19 +26,25 @@ library(Hmisc)
 library(janitor)
 library(readxl)
 library(skimr)
+library(ggridges)
+library(ggplot2)
+library(tm)
+library(wordcloud)
 ```
 
-## 1 Background
+# Background
 
 why are we visualizing this dataset? what do we want to get out of it?
 
-## 2 Load & inspect Data
-We would like to inspect the dataset in the following orders:
-2.1 missing, empty, and duplicated values;
-2.2 data types;
-2.3 weird values, errors, and outliers.
+# Load & inspect Data
 
-```{r load / inspect data, message = FALSE, warning = FALSE}
+We would like to inspect the dataset in the following orders:
+
+1) missing, empty, and duplicated values;
+1) data types;
+1) weird values, errors, and outliers.
+
+```{r}
 # 1. Load the data
 original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>% 
   clean_names() %>% 
@@ -39,8 +54,6 @@ original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>%
 head(original_data)
 
 # Check for missing values
-skim(original_data)
-
 describe(original_data) 
 
 # Check for duplicates
@@ -50,14 +63,18 @@ get_dupes(original_data)
 glimpse(original_data)
 
 # Check for errors and outliers
-ggplot(original_data, aes(x = price)) + geom_boxplot()
-ggplot(original_data, aes(x = price)) + geom_histogram(binwidth = 20)
-ggplot(original_data, aes(x = points)) + geom_boxplot()
+ggplot(original_data, aes(x = price)) +
+  geom_boxplot()
+ggplot(original_data, aes(x = price)) +
+  geom_histogram(binwidth = 20)
+ggplot(original_data, aes(x = points)) +
+  geom_boxplot()
 ```
 
 Through the inspection, we find:
 
 > *Missing, empty, and duplicated values:*
+
 - `country`: 63 blanks, why missing? should we fix it or not? how to fix it?
 - `designation`: 
 - `region_1`:
@@ -65,21 +82,24 @@ Through the inspection, we find:
 - `taster_name`:
 - `taster_twitter_handle`:
 - `variety`: 1 blank, 
-- No duplicates.
 
 > *data type:*
+
 - `country`: should be a catergorical variable.
 - 
 
 > *weird values, errors, and outliers:*
+
 - `price` appears to have an outlier.
 - `points` falls in a reasonal range between 80 and 100, which does not need to be further modified.
 
-## 3 Clean data
+## Clean data
+
 This section will follow the order of the previous section and aim to fix the flaws to ease the further visualization.
 
-### 3.1 Resolve the missing values 
-```{r clean data 1, message = FALSE, warning = FALSE}
+### Resolve the missing values 
+
+```{r, clean data 1}
 # While trying to fix the missing countries with another locator
 # We find that all observations missing country values have unique winery values
 # List of all wineries for entries with no country.
@@ -117,9 +137,248 @@ variety_na <- clean1 %>%
 # The missing grape type is "Petite Sirah"
 clean1 <- clean1 %>% 
   mutate(variety = case_when(title == "Carmen 1999  (Maipo Valley)" ~ "Petite Sirah",
-                            TRUE ~ variety ))
+                            TRUE ~ variety 
+                            ),
+         region_1 = case_when(province == "Douro" ~ "Trás-os-Montes",
+                              TRUE ~ region_2)
+         )
+
 skim(clean1$variety)
 
+clean2 <- clean1 %>% 
+  select(-c(region_2, taster_twitter_handle)) %>% 
+  filter(
+    !is.na(price),
+    !is.na(points),
+    !is.na(country)
+  ) %>% 
+  mutate(
+    company = str_extract(title, '\\D*(?=\\d)'),
+    year = as.double(trimws(gsub("[^0-9]", "",  title))),
+    year = case_when(
+      year < 1934 ~ 0,
+      year > 2020 ~ 0,
+      TRUE ~ year
+      )
+     # Missing the info after the numbers
+    )
+
+#View(clean2)
+#describe(clean2)
+```
+
+### Cleaning Description
+
+```{r}
+input_words <- clean2$description[clean2$country == "France"]
+
+input_words <- VectorSource(input_words)
+input_words <- VCorpus(input_words)
+
+irrelevant_words <- c("wine", "winery", "it", "green", "winemaking", "winemark", "without", "alcohol", "although", "across", "age", "almost", "along", "also", "amount", "alongsid", "anoth", "approach", "around", "back", "background", "basic", "barrel", "big", "bit", "blend", "bottl", "bouquet", "cellar", "continu", "core", "cut", "develop", "display", "end", "extra",  "drink", "drinking", "doesnt", "element", "enough", "featur", "feel", "fill", "find", "first", "final", "finish", "focus", "follow", "food", "forward", "frame", "front", "get", "give", "given", "glass", "grape", "here", "hint", "highlight", "hold", "just", "keep", "lack", "last", "layer", "length", "lift", "littl", "made", "make", "mark", "medium", "mix", "month", "mouth", "much", "name", "need", "new", "next", "nose", "note", "now", "offer", "one", "open", "overal", "pair", "part", "pack", "play", "price", "produc", "provid", "quick", "quit", "palat", "rather", "region",  "remain", "result", "reveal", "right", "round", "run", "select", "seem", "set", "show", "soon", "side", "sip", "small", "slight", "somewhat", "start", "suggest", "suppl", "support", "take", "that", "there", "though", "time", "togeth", "top", "toward", "two", "turn", "use", "variety", "vine", "vineyard", "vintag", "way", "weight", "will", "winemak", "wineri", "year", "yet", "<e2><80><93>", "<c3><a8>dr", "<c3><a9>" ,"aroma", "flavor", "autolyt", "serious", "reson", "long", "red", "black")
+
+clean_words <- function(inside){
+  inside <- tm_map(inside, removePunctuation)
+  inside <- tm_map(inside, removeNumbers)
+  inside <- tm_map(inside, content_transformer(tolower))
+  inside <- tm_map(inside, removeWords, stopwords("en"))
+  inside <- tm_map(inside, stemDocument)
+  inside <- tm_map(inside, removeWords, irrelevant_words)
+  inside <- tm_map(inside, stripWhitespace)
+  return(inside)
+}
+
+out_clean_words <- clean_words(input_words)
+
+ocw_tdm <- TermDocumentMatrix(out_clean_words)
+
+top_10_words <- findFreqTerms(ocw_tdm, lowfreq = 3300)
+paste0("The Top 10 Words Associated to Wines in ", "France" , " are: ")
+print(top_10_words)
+
+ocw_m <- as.matrix(ocw_tdm) 
+aa <- rowSums(ocw_m)
+aa <- sort(aa, decreasing = TRUE)
+
+aa_df <- data.frame(words = names(aa),
+                    freq = aa)
+
+word_cloud <- aa_df %>%
+  ggplot(aes(x = factor(words, levels = words[order(-freq)]), y = freq)) +
+  wordcloud(aa_df$words, aa_df$freq, max.words = 10, color = "red")
+```
+
+## Exploratory Data Analysis
+
+```{r}
+# Scaled Histogram of prices
+points_hist <- clean2 %>% 
+  ggplot() +
+  geom_histogram(aes(x = points))
+
+points_hist
+
+# Scaled Distribution of prices
+price_hist <- clean2 %>% 
+  filter(price < 85) %>% 
+  ggplot() +
+  geom_histogram(aes(x = price))
+
+price_hist
+
+# Scatter plot of Price v Points
+price_points <- clean2 %>% 
+  filter(price < 155) %>% 
+  ggplot(aes(x = (price), y = (points))) +
+  geom_point() + 
+  geom_smooth(method = lm)
+
+price_points
+
+ReviewData <- clean2 %>% 
+  group_by(country) %>% 
+  summarise(tot = n()) %>% 
+  arrange(desc(tot)) %>% 
+  mutate(percent_of_reviews = round(tot / sum(tot), digits = 4),
+         cumsum_reviews = cumsum(percent_of_reviews))
+
+ReviewData
+
+dist_plot <- ReviewData %>% 
+  head(5) %>%
+  mutate(country = as_factor(country)) %>% 
+  ggplot(aes(x = country, y = tot)) +
+  geom_col(stat = "identity", fill = "#524c84") + 
+  geom_text(aes(label = sprintf("%.0f%%", 100 * percent_of_reviews), y = tot + 2000)) +
+  labs(x = "",
+       y = "Total Number of Reviews",
+       title = "US Wines Dominate Dataset!",
+       subtitle = "Distribution of Wine Reviews by Top 5 Countries") +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+
+dist_plot
+
+avg_score <- clean2 %>% 
+  group_by(country) %>%
+  summarise(
+    avg_score = mean(points),
+    count = n()
+  ) %>%
+  #filter(count > 50) %>% 
+  arrange(desc(avg_score)) %>%
+  head(10)
+
+avg_score_plot <- avg_score %>% 
+  ggplot(aes(x = reorder(country, -avg_score), y = avg_score)) + 
+  geom_bar(stat = "identity", fill = "#524c84") + 
+  coord_cartesian(ylim = c(88, 92)) + 
+  labs(
+    y = "Average Rating",
+    x = "",
+    title = "England Has The Highest Average Rated Wines!",
+    subtitle = "Top 10 Countries by Average Rating"
+    ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+
+avg_score_plot
+
+select_c <- c("Engalnd",
+              "Austria",
+              "Germany",
+              "Canada",
+              "Hungary",
+              "France",
+              "Italy",
+              "Australia",
+              "US",
+              "Israel")
+
+violin_plot <- clean2 %>% 
+  group_by(country) %>%
+  filter(country %in% select_c) %>%
+  ggplot(aes(x = points,
+             y = country,
+             fill = country)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+violin_plot
+
+score_by_country <- clean2 %>% 
+  filter(country %in% select_c) %>% 
+  ggplot(aes(x = points, y = reorder(country, points, FUN = median))) +
+  geom_boxplot() +
+  stat_summary(geom = "point",
+               color = "red") +
+  labs(
+    y = "",
+    x = "Points",
+    title = "Germany has the Highest Median Score!",
+    subtitle = "Distribution of Scores by Country"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+  
+score_by_country
+
+avg_price_all <- clean2 %>% 
+  group_by(country) %>%
+  summarise(
+    avg_price = mean(price),
+    count = n()
+  ) %>%
+  filter(count > 50) %>% 
+  arrange(desc(avg_price))
+
+select_p <- c("England",
+              "US",
+              "Canada",
+              "Italy",
+              "Lebanon",
+              "Israel",
+              "Hungary",
+              "Germany",
+              "Austria",
+              "France"
+              )
+
+price_by_country <- clean2 %>% 
+  filter(price < 155) %>% 
+  group_by(country) %>% 
+  filter(country %in% select_p) %>% 
+  ggplot(aes(x = price, y = reorder(country, price, FUN = mean), color = country)) +
+  geom_violin() +
+  stat_summary(geom = "point",
+               color = "red") +
+  labs(
+    y = "",
+    x = "Price",
+    title = "England has the Most Expensive Mean Wine!",
+    subtitle = "Distribution of Prices Country"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12)
+  )
+  
+price_by_country
+
+df <- clean2 %>% 
+  filter(!is.na(price))%>% 
+  select(price) %>%  
+  table()
+df1 <- prop.table(df) 
+
+paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
 
 # Desciribing Scores
@@ -163,6 +422,4 @@ summary(ols_model5)
 
 anova(ols_model, ols_model2, ols_model3, ols_model4)
 # Our model improved as the p-value (2.2e-16) is far below alpha
-
-
 ```
