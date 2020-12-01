@@ -384,6 +384,7 @@ paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 # Regressions
 
 ```{r}
-
+model_lm<-lm(as.numeric(price)~points, clean2)
+summary(model_lm)
 ```
 
