@@ -1,5 +1,7 @@
 # DataVizProject
 
+***
+
 *Group 13's Data Visualization Project*
 
 [Data Set](https://www.kaggle.com/zynicide/wine-reviews) - Wine Reviews
