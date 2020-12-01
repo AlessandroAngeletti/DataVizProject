@@ -466,5 +466,4 @@ data.frame(
   RMSE = RMSE(predictions, testing$points),
   Rsquare = R2(predictions, testing$points)
 )
-```
 
