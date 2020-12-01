@@ -563,6 +563,9 @@ plsFit <- train(
   )
 
 print(plsFit)
+
+# RMSE     Rsquared  MAE    
+# 4.63334  0.281012  1.87919
 ```
 
 ## LASSO
@@ -575,7 +578,7 @@ training <- training(train_test_split)
 testing <- testing(train_test_split)
 
 lasso <- train(
- points ~ price + log(price) + country + year,
+ points ~ log(price) + country + year*province + year*variety,
  data = training,
  method = "glmnet",
   preProc = c("center", "scale"), # This option standardizes the data before running the LASSO regression
