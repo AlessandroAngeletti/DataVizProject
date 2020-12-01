@@ -30,6 +30,9 @@ library(ggridges)
 library(ggplot2)
 library(tm)
 library(wordcloud)
+library(caret)
+library(rsample)
+library(GGally)
 ```
 
 # Background
@@ -381,10 +384,219 @@ df1 <- prop.table(df)
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
 
-# Regressions
+# GGally
 
 ```{r}
-model_lm<-lm(as.numeric(price)~points, clean2)
-summary(model_lm)
+clean2 %>% 
+  mutate(country_num = case_when(
+    country == "Portugal" ~ 1,
+    country == "US" ~ 2,
+    country == "Spain" ~ 3,
+    country == "Italy" ~ 4,
+    country == "France" ~ 5,
+    country == "Germany" ~ 6,
+    country == "Argentina" ~ 7,
+    country == "Chile" ~ 8,
+    country == "Australia" ~ 9,
+    country == "Austria" ~ 10,
+    country == "South Africa" ~ 11,
+    country == "New Zealand" ~ 12,
+    country == "Israel" ~ 13,
+    country == "Hungary" ~ 14,
+    country == "Greece" ~ 15,
+    country == "Romania" ~ 16,
+    country == "Mexico" ~ 17,
+    country == "Canada" ~ 18,
+    country == "Turkey" ~ 19,
+    country == "Czech Republic" ~ 20,
+    country == "Slovenia" ~ 21,
+    country == "Luxembourg" ~ 22,
+    country == "Croatia" ~ 23,
+    country == "Georgia" ~ 24,
+    country == "Uruguay" ~ 25,
+    country == "England" ~ 26,
+    country == "Lebanon" ~ 27,
+    country == "Serbia" ~ 28,
+    country == "Brazil" ~ 29,
+    country == "Moldova" ~ 30,
+    country == "Morocco" ~ 31,
+    country == "Peru" ~ 32,
+    country == "India" ~ 33,
+    country == "Bulgaria" ~ 34,
+    country == "Cyprus" ~ 35,
+    country == "Armenia" ~ 36,
+    country == "Switzerland" ~ 37,
+    country == "Bosnia and Herzegovina" ~ 38,
+    country == "Ukraine" ~ 39,
+    country == "Slovakia" ~ 40,
+    country == "Macedonia" ~ 41,
+    TRUE ~ 42
+  ),
+  taster_num = case_when(
+     taster_name == "Roger Voss" ~ 1,
+     taster_name == "Paul Gregutt" ~ 2,
+     taster_name == "Alexander Peartree" ~ 3,
+     taster_name == "Michael Schachner" ~ 4,
+     taster_name == "Kerin O’Keefe" ~ 5,
+     taster_name == "Anna Lee C. Iijima" ~ 6,
+     taster_name == "Virginie Boone" ~ 7,
+     taster_name == "Matt Kettmann" ~ 8,
+     taster_name == "Sean P. Sullivan" ~ 9,
+     taster_name == "Jim Gordon" ~ 10,
+     taster_name == "Joe Czerwinski" ~ 11,
+     taster_name == "Anne Krebiehl MW" ~ 12,
+     taster_name == "Lauren Buzzeo" ~ 13,
+     taster_name == "Mike DeSimone" ~ 14,
+     taster_name == "Jeff Jenssen" ~ 15,
+     taster_name == "Susan Kostrzewa" ~ 16,
+     taster_name == "Carrie Dykes"  ~ 17,
+     taster_name == "Fiona Adams" ~ 18,
+     taster_name == "Christina Pickard" ~ 19,
+     TRUE ~ 20
+  )) %>% 
+  select(c(price, points, year, country_num, taster_num)) %>% #keep Y variable last
+  filter(year > 0) %>%
+  ggcorr(method = c("pairwise", "pearson"), label_round = 2, nbreaks = 5, label = TRUE)
+
+describe(clean2)
+unique(clean2$taster_name)
 ```
 
+
+# Regression - Scores
+
+## OLS
+
+```{r}
+dataAnalysis <- clean2 %>% 
+  filter(price < 156,
+         country %in% c("Spain", "Italy", "Portugal", "US"),
+         year > 0
+         ) %>% 
+  mutate(
+    points = as.integer(points),
+    price = as.integer(price),
+    winery = as.factor(winery),
+    province = as.factor(province),
+    variety = as.factor(variety),
+    taster_name = as.factor(taster_name)
+  )
+
+ols_model <- lm(points ~ price, dataAnalysis)
+summary(ols_model)
+
+# R-Squared of: 0.2815
+
+ols_model2 <- lm(points ~ price + log(price), dataAnalysis)
+summary(ols_model2)
+
+# R-Squared of: 0.3268 
+
+anova(ols_model, ols_model2)
+# Our model improved as the p-value (2.2e-16) is far below alpha
+
+ols_model3 <- lm(points ~ price + log(price) + country, dataAnalysis)
+summary(ols_model3)
+
+# R-Squared of: 0.3381
+
+ols_model4 <- lm(points ~ price + log(price) + country + year, dataAnalysis)
+summary(ols_model4)
+ols_model4b <- lm(points ~ log(price) + country + year, dataAnalysis)
+summary(ols_model4b)
+
+# R-Squared of: 0.3437
+# R-Squared of: 0.3519
+
+ols_model5 <- lm(points ~ log(price) + country + year + taster_name, dataAnalysis)
+summary(ols_model5)
+
+# R-Squared of: 0.3779 
+
+ols_model6 <- lm(points ~ price + log(price) + country + year + variety, dataAnalysis)
+summary(ols_model6)
+
+# R-squared of: 0.3734
+
+ols_model6b <- lm(points ~ price + log(price) + country + year*variety, dataAnalysis)
+summary(ols_model6b)
+
+# R-squared of: 0.3787
+
+ols_model7 <- lm(points ~ price + log(price) + country + year + province, dataAnalysis)
+summary(ols_model7)
+
+# R-squared of: 0.3714 
+
+ols_model8 <- lm(points ~ price + log(price) + country + year*province, dataAnalysis)
+summary(ols_model8)
+
+# R-squared of: 0.3797 
+
+ols_model8 <- lm(points ~ price + log(price) + country + year*province + year*variety, dataAnalysis)
+summary(ols_model8)
+
+# R-squared of: 0.4020 
+
+ols_model9 <- lm(points ~ log(price) + country + year*province + year*variety, dataAnalysis)
+summary(ols_model9)
+# R-squared of: 0.4019
+
+anova(ols_model, ols_model2, ols_model3, ols_model4)
+# Our model improved as the p-value (2.2e-16) is far below alpha
+```
+
+## K-Fold
+
+```{r}
+control <- trainControl (
+    method = "cv",
+    number = 5,
+    verboseIter = TRUE) #by setting this to true the model will report its progress after each estimation
+
+#we are going to train the model and report the results using k-fold cross validation
+plsFit <- train(
+  points ~ log(price) + country + year*province + year*variety,
+  dataAnalysis,
+  method = "lm",
+  trControl = control
+  )
+
+print(plsFit)
+```
+
+## LASSO
+
+```{r}
+set.seed(1234)
+lambda_seq <- seq(0, 0.01, length = 1000)
+train_test_split <- initial_split(dataAnalysis, prop = 0.01)
+training <- training(train_test_split)
+testing <- testing(train_test_split)
+
+lasso <- train(
+ points ~ price + log(price) + country + year,
+ data = training,
+ method = "glmnet",
+  preProc = c("center", "scale"), # This option standardizes the data before running the LASSO regression
+  trControl = control,
+  tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq) # Alpha=1 specifies to run a LASSO regression. If alpha=0 the model would run ridge regression.
+  )
+
+coef(lasso$finalModel, lasso$bestTune$lambda)
+lasso$bestTune$lambda
+
+predictions <- predict(lasso,testing)
+
+# Model prediction performance
+data.frame(
+  RMSE = RMSE(predictions, testing$points),
+  Rsquare = R2(predictions, testing$points)
+)
+```
+
+```{r}
+# We can check variable importance as well
+importance7 <- varImp(model_lm, scale = TRUE)
+plot(importance7)
+```
