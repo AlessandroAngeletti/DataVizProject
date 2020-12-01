@@ -30,6 +30,8 @@ library(ggridges)
 library(ggplot2)
 library(tm)
 library(wordcloud)
+library(caret)
+library(rsample)
 ```
 
 # Background
@@ -381,9 +383,87 @@ df1 <- prop.table(df)
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
 
-# Regressions
+# Regression - Scores
+
+## OLS
 
 ```{r}
+dataAnalysis <- clean2 %>% 
+  filter(price < 156,
+         country %in% c("Spain", "Italy", "Portugal", "US"),
+         year > 0
+         ) %>% 
+  mutate(
+    points = as.integer(points),
+    price = as.integer(price),
+    winery = as.factor(winery)
+  )
 
+ols_model <- lm(points ~ price, dataAnalysis)
+summary(ols_model)
+
+# R-Squared of: 0.2815
+
+ols_model2 <- lm(points ~ price + I(price^2), dataAnalysis)
+summary(ols_model2)
+
+# R-Squared of: 0.3268 
+
+anova(ols_model, ols_model2)
+# Our model improved as the p-value (2.2e-16) is far below alpha
+
+ols_model3 <- lm(points ~ price + log(price) + country, dataAnalysis)
+summary(ols_model3)
+
+# R-Squared of: 0.3381
+
+ols_model4 <- lm(points ~ price + I(price^2) + country + year, dataAnalysis)
+summary(ols_model4)
+
+# R-Squared of: 0.3437
+
+ols_model5 <- lm(points ~ price + I(price^2) + country + year + as.factor(taster_name), dataAnalysis)
+summary(ols_model5)
+
+# R-Squared of: 0.3648
+
+anova(ols_model, ols_model2, ols_model3, ols_model4)
+# Our model improved as the p-value (2.2e-16) is far below alpha
 ```
+
+## K-Fold
+
+```{r}
+control <- trainControl (
+    method = "cv",
+    number = 10,
+    verboseIter = TRUE) #by setting this to true the model will report its progress after each estimation
+
+#we are going to train the model and report the results using k-fold cross validation
+plsFit <- train(
+  points ~ price + I(price^2) + country + year ,
+  dataAnalysis,
+  method = "lm",
+  trControl = control
+  )
+
+print(plsFit)
+```
+
+## LASSO
+
+```{r}
+set.seed(1234)
+train_test_split <- initial_split(dataAnalysis, prop = 0.01)
+training <- training(train_test_split)
+testing <- testing(train_test_split)
+
+model_lm <- lm(points ~ price + I(price^2) + country + year, training)
+predictions <- predict(model_lm,testing)
+
+# Model prediction performance
+data.frame(
+  RMSE = RMSE(predictions, testing$points),
+  Rsquare = R2(predictions, testing$points)
+)
 
