@@ -94,11 +94,12 @@ Through the inspection, we find:
 - `variety`: 1 blank, this column will be fixed right away
 
 > *data type:*
->
-- `country`: should be a catergorical variable.
+
+- `country`: should be a categorical variable.
+
 
 > *weird values, errors, and outliers:*
->
+
 - `price` appears to have an outlier.
 - `points` falls in a reasonable range between 80 and 100, which does not need to be further modified.
 - `description` is very imformative but contains too many different types of values.

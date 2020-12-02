@@ -2,15 +2,13 @@
 
 ***
 
-*Study Group 13's Data Visualization Project*
-
-[Data Set](https://www.kaggle.com/zynicide/wine-reviews) - Wine Reviews
+*by Study Group 13*
 
 _Grüner Veltliner, Rioja, Bourgeuil, or Cabernet Sauvignon?_
 
 On average, six out of ten Brits wish they knew more about wine, with over half so overwhelmed by their lack of knowledge that they leave wine-related decisions to someone else. However, this doesn't have to be the case especially when you're out on a date. 
 
-The dataset we are investigating was originally scraped from [WineEnthusiast](https://www.winemag.com/?s=&drink_type=wine) in November, 2017. We analyse information on 129,971 reviews (score points) on 708 varieties of wine as well as their prices and origin (country and winery) to answer the following questions - 
+The [data Set](https://www.kaggle.com/zynicide/wine-reviews) we are investigating was originally scraped from [WineEnthusiast](https://www.winemag.com/?s=&drink_type=wine) in November, 2017. We analyse information on 129,971 reviews (score points) on 708 varieties of wine as well as their prices and origin (country and winery) to answer the following questions - 
 (1) What makes a wine good? 
 (2) What makes a wine pricey?
 (3) Is a more expensive wine necessarily a better wine? 
