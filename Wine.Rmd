@@ -622,7 +622,7 @@ print(plsFit)
 # 4.63334  0.281012  1.87919
 ```
 
-###LASSO
+### LASSO
 
 ```{r LASSO Scores, message = FALSE, warning = FALSE}
 set.seed(1234)
