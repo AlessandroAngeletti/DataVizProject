@@ -33,10 +33,15 @@ library(wordcloud)
 library(caret)
 library(rsample)
 library(GGally)
-library(patchwork)
+library(purrr)
+library(gridExtra)
+library(ggpubr)
 library(extrafont)
-font_import()
-#loadfonts(device = "win")
+library(fmsb)
+library(RColorBrewer)
+library(patchwork)
+library(tidytext)
+#font_import()
 loadfonts(device = "pdf")
 ```
 
@@ -52,7 +57,7 @@ We would like to inspect the dataset in the following orders:
 1) data types;
 1) weird values, errors, and outliers.
 
-```{r load data, message = FALSE, warning = FALSE}
+```{r load data, message = FALSE, warning = FALSE, echo = FALSE}
 # 1. Load the data
 original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>% 
   clean_names() %>% 
@@ -82,7 +87,7 @@ ggplot(original_data, aes(x = points)) +
 Through the inspection, we find:
 
 > *Missing, empty, and duplicated values:*
->
+
 - `country`: 63 blanks, this column will be fixed right away due to its importance
 - `designation`(wine brand): 37465 blanks
 - `price`: 8996 blanks, the blanks will be removed as the column is important but hard to fix
@@ -111,7 +116,7 @@ This section will follow the order of the previous section and aim to fix the fl
 
 ### Resolve the missing values 
 
-```{r, clean data 1, echo = FALSE, message = FALSE, warning = FALSE}
+```{r, clean data 1, message = FALSE, warning = FALSE, echo = FALSE}
 # While trying to fix the missing countries with another locator
 # We find that all observations missing country values have unique winery values
 # List of all wineries for entries with no country.
@@ -158,7 +163,7 @@ skim(clean1$variety)
 
 ### Clean Description
 
-```{r clean data 2, message = FALSE, warning = FALSE}
+```{r clean data 2, message = FALSE, warning = FALSE, echo = FALSE}
 input_words <- clean1$description[clean1$country == "France"]
 
 input_words <- VectorSource(input_words)
@@ -199,7 +204,8 @@ word_cloud <- aa_df %>%
 ## Exploratory Data Analysis
 
 ### Clean other variables
-```{r clean data 3, echo = FALSE, message = FALSE, warning = FALSE}
+
+```{r clean data 3, message = FALSE, warning = FALSE, echo = FALSE}
 
 clean2 <- clean1 %>% 
   # Remove the irrelevant, unfixable columns
@@ -222,12 +228,11 @@ clean2 <- clean1 %>%
     ) %>% 
   # Modify the data type of country
   mutate(country = as.factor(country))
-
 ```
 
 ## Exploratory Data Analysis
 
-```{r EDA, warning = FALSE, message = FALSE}
+```{r EDA, message = FALSE, warning = FALSE, echo = FALSE}
 
 select_c <- c("Engalnd",
               "Austria",
@@ -451,87 +456,11 @@ paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 
 After cleaning the data, we would like first to see what are the correlations between each factor of wines.
 
-## GGally
-
-```{r ggcorr, }
-clean2 %>% 
-  mutate(country_num = case_when(
-    country == "Portugal" ~ 1,
-    country == "US" ~ 2,
-    country == "Spain" ~ 3,
-    country == "Italy" ~ 4,
-    country == "France" ~ 5,
-    country == "Germany" ~ 6,
-    country == "Argentina" ~ 7,
-    country == "Chile" ~ 8,
-    country == "Australia" ~ 9,
-    country == "Austria" ~ 10,
-    country == "South Africa" ~ 11,
-    country == "New Zealand" ~ 12,
-    country == "Israel" ~ 13,
-    country == "Hungary" ~ 14,
-    country == "Greece" ~ 15,
-    country == "Romania" ~ 16,
-    country == "Mexico" ~ 17,
-    country == "Canada" ~ 18,
-    country == "Turkey" ~ 19,
-    country == "Czech Republic" ~ 20,
-    country == "Slovenia" ~ 21,
-    country == "Luxembourg" ~ 22,
-    country == "Croatia" ~ 23,
-    country == "Georgia" ~ 24,
-    country == "Uruguay" ~ 25,
-    country == "England" ~ 26,
-    country == "Lebanon" ~ 27,
-    country == "Serbia" ~ 28,
-    country == "Brazil" ~ 29,
-    country == "Moldova" ~ 30,
-    country == "Morocco" ~ 31,
-    country == "Peru" ~ 32,
-    country == "India" ~ 33,
-    country == "Bulgaria" ~ 34,
-    country == "Cyprus" ~ 35,
-    country == "Armenia" ~ 36,
-    country == "Switzerland" ~ 37,
-    country == "Bosnia and Herzegovina" ~ 38,
-    country == "Ukraine" ~ 39,
-    country == "Slovakia" ~ 40,
-    country == "Macedonia" ~ 41,
-    TRUE ~ 42
-  ),
-  taster_num = case_when(
-     taster_name == "Roger Voss" ~ 1,
-     taster_name == "Paul Gregutt" ~ 2,
-     taster_name == "Alexander Peartree" ~ 3,
-     taster_name == "Michael Schachner" ~ 4,
-     taster_name == "Kerin O’Keefe" ~ 5,
-     taster_name == "Anna Lee C. Iijima" ~ 6,
-     taster_name == "Virginie Boone" ~ 7,
-     taster_name == "Matt Kettmann" ~ 8,
-     taster_name == "Sean P. Sullivan" ~ 9,
-     taster_name == "Jim Gordon" ~ 10,
-     taster_name == "Joe Czerwinski" ~ 11,
-     taster_name == "Anne Krebiehl MW" ~ 12,
-     taster_name == "Lauren Buzzeo" ~ 13,
-     taster_name == "Mike DeSimone" ~ 14,
-     taster_name == "Jeff Jenssen" ~ 15,
-     taster_name == "Susan Kostrzewa" ~ 16,
-     taster_name == "Carrie Dykes"  ~ 17,
-     taster_name == "Fiona Adams" ~ 18,
-     taster_name == "Christina Pickard" ~ 19,
-     TRUE ~ 20
-  )) %>% 
-  select(c(price, points, year, country_num, taster_num)) %>% #keep Y variable last
-  filter(year > 0) %>%
-  ggcorr(method = c("pairwise", "pearson"), label_round = 2, nbreaks = 5, label = TRUE) +
-  theme(text = element_text(family = "Century Gothic"))
-```
-
 ## Regression - Scores
 
 ### OLS
 
-```{r OLS Scores, message = FALSE, warning = FALSE}
+```{r OLS Scores, message = FALSE, warning = FALSE, echo = FALSE}
 dataAnalysis <- clean2 %>% 
   filter(price < 156,
          country %in% c("Spain", "Italy", "Portugal", "US", "France"),
@@ -612,7 +541,7 @@ anova(ols_model, ols_model2, ols_model3, ols_model4)
 
 ### K-Fold
 
-```{r K-Fold Score, message = FALSE, warning = FALSE}
+```{r K-Fold Score, message = FALSE, warning = FALSE, echo = FALSE}
 control <- trainControl (
     method = "cv",
     number = 5,
@@ -634,7 +563,7 @@ print(plsFit)
 
 ### LASSO
 
-```{r LASSO Scores, message = FALSE, warning = FALSE}
+```{r LASSO Scores, message = FALSE, warning = FALSE, echo = FALSE}
 set.seed(1234)
 lambda_seq <- seq(0, 0.01, length = 1000)
 train_test_split <- initial_split(dataAnalysis, prop = 0.01)
@@ -666,7 +595,7 @@ data.frame(
 
 ### OLS
 
-```{r OLS Price, message = FALSE, warning = FALSE}
+```{r OLS Price, message = FALSE, warning = FALSE, echo = FALSE}
 
 dataAnalysis_2 <- clean2 %>% 
   filter(price < 156,
@@ -741,7 +670,7 @@ anova(ols_model_6, ols_model_8, ols_model_9, ols_model_10)
 
 ### K-Fold
 
-```{r K-Fold Price, message = FALSE, warning = FALSE}
+```{r K-Fold Price, message = FALSE, warning = FALSE, echo = FALSE}
 control <- trainControl (
     method = "cv",
     number = 5,
@@ -762,7 +691,7 @@ print(plsFit_2)
 
 ### LASSO
 
-```{r LASSO Price, message = FALSE, warning = FALSE }
+```{r LASSO Price, message = FALSE, warning = FALSE, echo = FALSE}
 set.seed(1234)
 lambda_seq <- seq(0, 0.01, length = 1000)
 train_test_split_2 <- initial_split(dataAnalysis_2, prop = 0.01)
@@ -788,4 +717,339 @@ data.frame(
   RMSE = RMSE(predictions, testing_2$points),
   Rsquare = R2(predictions, testing_2$points)
 )
+```
+
+
+# Wine Description Analysis
+
+Building Variables
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+# Using the word clouds plotted earlier, and consulting websites on wine tasting, let's create some key characteristics to comment on for wines, and develop lists with other words that are similar
+# We will use these to gain insight into the information containted in the description column
+
+citrus_list <- c("citrus", "orange", "lemon", "lime", "citric", "grapefruit", "mandarin", "yuzu", "rind", "pith", "tangerine", "zesty", "zestiness", "citrusy", "tangy")
+berry_list <- c("berry", "berri", "cherry", "cherri", "blackberry", "raspberry", "strawberry", "berries", "gooseberry", "cranberry", "blueberry", "raisins", "currant", "blackcurrant", "redcurrant", "mulberry")
+fruity_list <- c("fruit", "peach", "plum", "pear", "apple", "tropical", "pineapple", "mango", "fruity","fruits", "guava", "apricot", "melon", "nectarine", "fig", "kiwi", "fruitiness", "jam", "jammy", "banana", "fig", "passionfruit", "passion fruit", "pomegranate")
+sweet_list <- c("sweet", "vanilla", "chocolate", "honey", "cinnamon", "caramel", "toffee", "sugary", "sugar", "maple syrup", "butterscotch", "cocoa", "honeysuckle")
+spice_list <- c("spice", "spicy", "pepper", "cumin", "anise", "clove", "nutmeg", "juniper", "clove", "cardamom", "peppery", "chilli", "bergamot", "capsicum")
+herby_list <- c("herb", "herby", "herbal", "thyme", "sage", "basil", "parsley", "dill", "rosemary", "oregano", "herbs", "sorrel", "lavendar", "jasmine", "pine")
+nutty_list <- c("walnut", "almond", "hazelnut", "cashew", "macadamia", "peanut", "nutmeg", "nutty", "walnuts", "almonds", "hazelnuts", "cashews", "macadamias", "peanuts")
+crisp_list <- c("crisp", "tart", "acidic", "dry", "acidity")
+fresh_list <- c("fresh", "light", "refreshing", "clean")
+coffee_list <- c("coffee", "mocha", "espresso")
+rich_list <- c("oaky", "rich", "cedar", "creamy", "woody", "leather", "toasty", "smoky", "mature", "butter", "buttery", "biscuit", "sandalwood")
+
+
+# Check for duplicates and remove
+clean2 <- clean2[!duplicated(clean2$description), ]
+
+# Create unique ID for each wine, then tokenise description variable so we can analyse each word
+word_description <- clean2 %>%
+  dplyr::mutate(ID = row_number()) %>% 
+  unnest_tokens(word, description)
+
+# Create new variables that can flag when certain words appear in the description
+characteristics <- word_description %>%
+  mutate(citrus = case_when(
+    word %in% citrus_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(berry = case_when(
+    word %in% berry_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(fruity = case_when(
+    word %in% fruity_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(sweet = case_when(
+    word %in% sweet_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(spice = case_when(
+    word %in% spice_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(herby = case_when(
+    word %in% herby_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(nutty = case_when(
+    word %in% nutty_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(crisp = case_when(
+    word %in% crisp_list ~ 1,
+    TRUE ~ 0)) %>% 
+  mutate(fresh = case_when(
+    word %in% fresh_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(coffee = case_when(
+    word %in% coffee_list ~ 1,
+    TRUE ~ 0
+  )) %>%
+  mutate(rich = case_when(
+    word %in% rich_list ~ 1,
+    TRUE ~ 0
+  ))
+```
+
+
+
+Now that we have our variables for different wine characteristics, let's look at cleaning the 'variety' variable so that we can analyse the prominent characteristics of each wine type.
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+# Let's inspect the variety variable
+variety_cleaning <- clean2 %>%
+  group_by(variety) %>% 
+  count() %>% 
+  arrange(desc(n))
+
+variety_cleaning
+# These varieties are too granular, so let's group some of them together
+
+# Referring to wine classifications from https://winefolly.com/deep-dive/different-types-of-wine/ , let's clean the 'variety' into bigger aggregate groupings
+dry_white_list <- c("Chardonnay", "Sauvignon Blanc", "Pinot Grigio", "Muscadet", "Silvaner", "Pinot Blanc", "White Blend", "Grüner Veltliner", "Portuguese White")
+sweet_white_list <- c("Muscat", "Riesling", "Chenin", "Vouvray")
+sparkling_list <- c("Champagne Blend", "Prosecco", "Cava", "Sparkling Blend")
+rose_list <- c("Rosé")
+dry_red_list <- c("Rioja", "Malbec", "Monastrell", "Shiraz", "Merlot", "Cabernet Sauvignon", "Red Blend", "Zinfandel", "Pinot Noir", "Syrah", "Bordeaux-style Red Blend", "Sangiovese", "Nebbiolo", "Portuguese Red", "Tempranillo", "Cabernet Franc")
+
+# We need to aggregate these new variables for each individual wine (the data frame is still split by each word in the description variable)
+characteristics_variety1 <- characteristics %>%
+  group_by(ID) %>%
+  summarise(country, 
+            variety, 
+            points = mean(points), 
+            price = mean(price), 
+            citrus = sum(citrus),
+            berry = sum(berry),
+            fruity = sum(fruity),
+            sweet = sum(sweet),
+            spice = sum(spice),
+            herby = sum(herby),
+            nutty = sum(nutty),
+            crisp = sum(crisp),
+            fresh = sum(fresh),
+            coffee = sum(coffee),
+            rich = sum(rich))
+
+# Check for duplicates
+characteristics_variety2 <- characteristics_variety1[!duplicated(characteristics_variety1$ID), ]
+```
+
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+characteristics_variety3 <- characteristics_variety2 %>% 
+  mutate(wine_type = case_when(
+    variety %in% dry_white_list ~ "Dry White",
+    variety %in% sweet_white_list ~ "Sweet White",
+    variety %in% sparkling_list ~ "Sparkling Wine",
+    variety %in% rose_list ~ "Rosé",
+    variety %in% dry_red_list ~ "Dry Red",
+    TRUE ~ "NA"
+  )) %>% 
+  select(country,
+         variety,
+         wine_type,
+         points, 
+         price, 
+         citrus,
+         berry,
+         fruity,
+         sweet,
+         spice,
+         herby,
+         nutty,
+         crisp,
+         fresh,
+         coffee,
+         rich)
+
+characteristics_variety4 <- characteristics_variety3 %>%
+  mutate(wine_type = factor(wine_type, levels = c("Dry Red", "Dry White", "Sweet White", "Rosé", "Sparkling Wine"))) %>% 
+  pivot_longer(citrus:rich, names_to = "characteristic", values_to = "score" )
+
+characteristics_variety4
+
+characteristics_variety5 <- characteristics_variety4 %>%
+  filter(wine_type != "NA") %>%
+  filter(characteristic != c("nutty","rich")) %>% 
+  group_by(wine_type, characteristic) %>% 
+  summarise(characteristic, average_characteristic = mean(score))
+
+characteristics_variety6 <- characteristics_variety5[!duplicated(characteristics_variety5$average_characteristic), ]
+
+characteristics_variety6
+
+plot1 <- characteristics_variety6 %>% 
+  ggplot(aes(x = average_characteristic, y = characteristic)) +
+  geom_col() +
+  facet_grid(~wine_type)
+  
+plot1
+
+```
+
+
+## Radar Plots
+
+Radar plots might be better to visualise these characteristics and compare between wine types. Let's create these below/
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+characteristics_variety7 <- characteristics_variety6 %>% 
+  pivot_wider(names_from = characteristic, values_from = average_characteristic)
+
+# Dry Red
+
+characteristics_variety_dryred<- characteristics_variety7 %>% 
+  filter(wine_type == "Dry Red") %>% 
+  select(citrus,
+         berry,
+         fruity,
+         sweet,
+         spice,
+         herby,
+         crisp,
+         fresh,
+         coffee)
+  
+characteristics_variety_dryred <- characteristics_variety_dryred[2:9]
+
+characteristics_variety_dryred <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_dryred)
+
+p1 <- radarchart( characteristics_variety_dryred  , axistype=1 , 
+ 
+    #custom polygon
+    pcol=rgb(0.6,0,0.4,0.9) , pfcol=rgb(0.6,0.2,0.4,0.5) , plwd=4 , seg = 3,
+ 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+ 
+    #custom labels
+    vlcex=0.8, title = "Dry Red" 
+    )
+
+# Dry White
+characteristics_variety_drywhite<- characteristics_variety7 %>% 
+  filter(wine_type == "Dry White") %>% 
+  select(citrus,
+         berry,
+         fruity,
+         sweet,
+         spice,
+         herby,
+         crisp,
+         fresh,
+         coffee)
+  
+characteristics_variety_drywhite <- characteristics_variety_drywhite[2:9]
+
+characteristics_variety_drywhite <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_drywhite)
+
+p2 <- radarchart( characteristics_variety_drywhite  , axistype=1 , 
+ 
+    #custom polygon
+    pcol=rgb(1,0.8,0.2,0.7) , pfcol=rgb(1,1,0.6,0.4) , plwd=4 , seg = 3,
+ 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+ 
+    #custom labels
+    vlcex=0.8, title = "Dry White" 
+    )
+
+# Sweet White
+
+characteristics_variety_sweetwhite<- characteristics_variety7 %>% 
+  filter(wine_type == "Sweet White") %>% 
+  select(citrus,
+         berry,
+         fruity,
+         sweet,
+         spice,
+         herby,
+         crisp,
+         fresh,
+         coffee)
+  
+characteristics_variety_sweetwhite <- characteristics_variety_sweetwhite[2:9]
+
+characteristics_variety_sweetwhite <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_sweetwhite)
+
+p3 <- radarchart( characteristics_variety_sweetwhite  , axistype=1 , 
+ 
+    #custom polygon
+    pcol=rgb(1,0.8,0.2,0.7) , pfcol=rgb(1,1,0.6,0.4) , plwd=4 , seg = 3,
+ 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+ 
+    #custom labels
+    vlcex=0.8, title = "Sweet White" 
+    )
+
+# Rosé
+
+characteristics_variety_rose<- characteristics_variety7 %>% 
+  filter(wine_type == "Rosé") %>% 
+  select(citrus,
+         berry,
+         fruity,
+         sweet,
+         spice,
+         herby,
+         crisp,
+         fresh,
+         coffee)
+  
+characteristics_variety_rose <- characteristics_variety_rose[2:9]
+
+characteristics_variety_rose <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_rose)
+
+p4 <- radarchart( characteristics_variety_rose  , axistype=1 , 
+ 
+    #custom polygon
+    pcol=rgb(1,0.6,0.4,0.9) , pfcol=rgb(1,0.6,0.4,0.5) , plwd=4 ,seg = 3, 
+ 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+ 
+    #custom labels
+    vlcex=0.8, title = "Rosé" 
+    )
+
+# Sparkling Wine
+
+characteristics_variety_sparkling<- characteristics_variety7 %>% 
+  filter(wine_type == "Sparkling Wine") %>% 
+  select(citrus,
+         berry,
+         fruity,
+         sweet,
+         spice,
+         herby,
+         crisp,
+         fresh,
+         coffee)
+  
+characteristics_variety_sparkling <- characteristics_variety_sparkling[2:9]
+
+characteristics_variety_sparkling <- rbind(rep(2,8) , rep(0,8) , characteristics_variety_sparkling)
+
+p5 <- radarchart( characteristics_variety_sparkling  , axistype=1 , 
+ 
+    #custom polygon
+    pcol=rgb(0.7,0.5,0.1,0.9) , pfcol=rgb(0.7,0.5,0.1,0.4) , plwd=4 ,seg = 3, 
+ 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+ 
+    #custom labels
+    vlcex=0.8, title = "Sparkling Wine"
+    )
 ```
