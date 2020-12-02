@@ -34,6 +34,10 @@ library(caret)
 library(rsample)
 library(GGally)
 library(patchwork)
+library(extrafont)
+font_import()
+#loadfonts(device = "win")
+loadfonts(device = "pdf")
 ```
 
 # Background
@@ -48,7 +52,7 @@ We would like to inspect the dataset in the following orders:
 1) data types;
 1) weird values, errors, and outliers.
 
-```{r}
+```{r load data, message = FALSE, warning = FALSE}
 # 1. Load the data
 original_data <- vroom::vroom("winemag-data-130k-v2.csv") %>% 
   clean_names() %>% 
@@ -78,24 +82,27 @@ ggplot(original_data, aes(x = points)) +
 Through the inspection, we find:
 
 > *Missing, empty, and duplicated values:*
-
-- `country`: 63 blanks, why missing? should we fix it or not? how to fix it?
-- `designation`: 
-- `region_1`:
-- `region_2`:
-- `taster_name`:
-- `taster_twitter_handle`:
-- `variety`: 1 blank, 
+>
+- `country`: 63 blanks, this column will be fixed right away due to its importance
+- `designation`(wine brand): 37465 blanks
+- `price`: 8996 blanks, the blanks will be removed as the column is important but hard to fix
+- `province`: 63 blanks
+- `region_1`: 21247 blanks, this column will be removed since we do not need it
+- `region_2`: 79460 blanks, this column will be removed
+- `taster_name`: 26244 blanks, this column will be kept and fixed when needed
+- `taster_twitter_handle`: 31213 blanks, this column will be removed
+- `variety`: 1 blank, this column will be fixed right away
 
 > *data type:*
-
+>
 - `country`: should be a catergorical variable.
-- 
 
 > *weird values, errors, and outliers:*
-
+>
 - `price` appears to have an outlier.
-- `points` falls in a reasonal range between 80 and 100, which does not need to be further modified.
+- `points` falls in a reasonable range between 80 and 100, which does not need to be further modified.
+- `description` is very imformative but contains too many different types of values.
+- `title` contains numbers(years) and text(vineyard names and wine names).
 
 ## Clean data
 
@@ -103,7 +110,7 @@ This section will follow the order of the previous section and aim to fix the fl
 
 ### Resolve the missing values 
 
-```{r, clean data 1}
+```{r, clean data 1, echo = FALSE, message = FALSE, warning = FALSE}
 # While trying to fix the missing countries with another locator
 # We find that all observations missing country values have unique winery values
 # List of all wineries for entries with no country.
@@ -142,39 +149,16 @@ variety_na <- clean1 %>%
 clean1 <- clean1 %>% 
   mutate(variety = case_when(title == "Carmen 1999  (Maipo Valley)" ~ "Petite Sirah",
                             TRUE ~ variety 
-                            ),
-         region_1 = case_when(province == "Douro" ~ "Trás-os-Montes",
-                              TRUE ~ region_2)
-         )
+                            ))
 
 skim(clean1$variety)
 
-clean2 <- clean1 %>% 
-  select(-c(region_2, taster_twitter_handle)) %>% 
-  filter(
-    !is.na(price),
-    !is.na(points),
-    !is.na(country)
-  ) %>% 
-  mutate(
-    company = str_extract(title, '\\D*(?=\\d)'),
-    year = as.double(trimws(gsub("[^0-9]", "",  title))),
-    year = case_when(
-      year < 1934 ~ 0,
-      year > 2020 ~ 0,
-      TRUE ~ year
-      )
-     # Missing the info after the numbers
-    )
-
-#View(clean2)
-#describe(clean2)
 ```
 
-### Cleaning Description
+### Clean Description
 
-```{r}
-input_words <- clean2$description[clean2$country == "France"]
+```{r clean data 2, message = FALSE, warning = FALSE}
+input_words <- clean1$description[clean1$country == "France"]
 
 input_words <- VectorSource(input_words)
 input_words <- VCorpus(input_words)
@@ -211,10 +195,38 @@ word_cloud <- aa_df %>%
   ggplot(aes(x = factor(words, levels = words[order(-freq)]), y = freq)) +
   wordcloud(aa_df$words, aa_df$freq, max.words = 10, color = "red")
 ```
+
+### Clean other variables
+```{r clean data 3, echo = FALSE, message = FALSE, warning = FALSE}
+
+clean2 <- clean1 %>% 
+  # remove the irrelevant, unfixable columns
+  select(-c(region_1, region_2, taster_twitter_handle)) %>% 
+  filter(
+    !is.na(price),
+    !is.na(points),
+    !is.na(country)
+  ) %>% 
+  # extract values from titles
+  mutate(
+    company = str_extract(title, '\\D*(?=\\d)'),
+    year = as.double(trimws(gsub("[^0-9]", "",  title))),
+    year = case_when(
+      year < 1934 ~ 0,
+      year > 2020 ~ 0,
+      TRUE ~ year
+      )
+     # Missing the info after the numbers
+    ) %>% 
+  # modify the data type of country
+  mutate(country = as.factor(country))
+
+```
+
 ## Exploratory Data Analysis
 
-```{r, warning = FALSE, message = FALSE}
-
+```{r EDA, warning = FALSE, message = FALSE}
+#
 select_c <- c("Engalnd",
               "Austria",
               "Germany",
@@ -242,7 +254,8 @@ points_hist <- clean2 %>%
     axis.text = element_text(face = "bold", size = 10),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    axis.title.x = element_text(face = "italic", vjust = -0.5)
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
+    text = element_text(family = "Century Gothic")
   ) +
   xlim(79, 100)
 
@@ -264,7 +277,8 @@ price_hist <- clean2 %>%
     axis.text = element_text(face = "bold", size = 10),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    axis.title.x = element_text(face = "italic", vjust = -0.5)
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
+    text = element_text(family = "Century Gothic")
   ) +
   xlim(0, 155)
 
@@ -273,9 +287,19 @@ price_hist
 # Scatter plot of Price v Points
 price_points <- clean2 %>% 
   filter(price < 155) %>% 
-  ggplot(aes(x = (price), y = (points))) +
+  ggplot(aes(x = price, y = points)) +
   geom_point() + 
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12),
+    axis.text = element_text(face = "bold", size = 10),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
+    text = element_text(family = "Century Gothic")
+  ) 
+  
 
 price_points
 
@@ -303,7 +327,8 @@ dist_plot <- ReviewData %>%
     axis.text = element_text(face = "bold", size = 10),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    axis.title.x = element_text(face = "italic", vjust = -0.5)
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
+    text = element_text(family = "Century Gothic")
   ) 
   
 dist_plot
@@ -330,7 +355,8 @@ avg_score_plot <- avg_score %>%
     ) +
   theme(
     plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(face = "italic", size = 12)
+    plot.subtitle = element_text(face = "italic", size = 12),
+    text = element_text(family = "Century Gothic")
   )
 
 avg_score_plot
@@ -357,7 +383,8 @@ score_by_country <- clean2 %>%
     axis.text = element_text(face = "bold", size = 10),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    axis.title.x = element_text(face = "italic", vjust = -0.5)
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
+    text = element_text(family = "Century Gothic")
   )
   
 score_by_country
@@ -381,11 +408,12 @@ violin_plot <- clean2 %>%
         panel.grid.major.y = element_blank(),
         panel.grid.minor.y = element_blank(),
         plot.title = element_text(face = "bold", size = 16, vjust = 3),
-        plot.subtitle = element_text(face = "italic", size = 12, vjust = 3)
+        plot.subtitle = element_text(face = "italic", size = 12, vjust = 3),
+        text = element_text(family = "Century Gothic")
     ) +
   labs(title = "Avoid Picking the Bad Blue Wines!",
        subtitle = "Avoid Downside Tail Risk by Selection Blue Wines",
-       x = "",
+       x = "Scores",
        y = ""
        ) +
   scale_color_manual(values = c("#D55E00", "#0072B2"), guide = "none")
@@ -409,9 +437,13 @@ df1 <- prop.table(df)
 
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
-# GGally
+# Data Analysis - Predicting Price and Score
 
-```{r}
+After cleaning the data, we would like first to see what are the correlations between each factor of wines.
+
+## GGally
+
+```{r ggcorr, }
 clean2 %>% 
   mutate(country_num = case_when(
     country == "Portugal" ~ 1,
@@ -481,14 +513,15 @@ clean2 %>%
   )) %>% 
   select(c(price, points, year, country_num, taster_num)) %>% #keep Y variable last
   filter(year > 0) %>%
-  ggcorr(method = c("pairwise", "pearson"), label_round = 2, nbreaks = 5, label = TRUE)
+  ggcorr(method = c("pairwise", "pearson"), label_round = 2, nbreaks = 5, label = TRUE) +
+  theme(text = element_text(family = "Century Gothic"))
 ```
 
-# Regression - Scores
+## Regression - Scores
 
-## OLS
+### OLS
 
-```{r}
+```{r OLS Scores, message = FALSE, warning = FALSE}
 dataAnalysis <- clean2 %>% 
   filter(price < 156,
          country %in% c("Spain", "Italy", "Portugal", "US"),
@@ -567,9 +600,9 @@ anova(ols_model, ols_model2, ols_model3, ols_model4)
 # Our model improved as the p-value (2.2e-16) is far below alpha
 ```
 
-## K-Fold
+### K-Fold
 
-```{r}
+```{r K-Fold Score, message = FALSE, warning = FALSE}
 control <- trainControl (
     method = "cv",
     number = 5,
@@ -589,9 +622,9 @@ print(plsFit)
 # 4.63334  0.281012  1.87919
 ```
 
-## LASSO
+###LASSO
 
-```{r}
+```{r LASSO Scores, message = FALSE, warning = FALSE}
 set.seed(1234)
 lambda_seq <- seq(0, 0.01, length = 1000)
 train_test_split <- initial_split(dataAnalysis, prop = 0.01)
@@ -619,15 +652,17 @@ data.frame(
 )
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # We can check variable importance as well
 importance <- varImp(ols_model9, scale = TRUE)
 plot(importance7)
 ```
 
-##OLS Regression for Price - Chris
+## Regression for Price
 
-```{r}
+### OLS
+
+```{r OLS Price, message = FALSE, warning = FALSE}
 
 dataAnalysis_2 <- clean2 %>% 
   filter(price < 156,
@@ -702,9 +737,9 @@ anova(ols_model_6, ols_model_8, ols_model_9, ols_model_10)
 
 ```
 
-## K-Fold
+### K-Fold
 
-```{r}
+```{r K-Fold Price, message = FALSE, warning = FALSE}
 control <- trainControl (
     method = "cv",
     number = 5,
@@ -724,9 +759,9 @@ print(plsFit_2)
 
 ```
 
-## LASSO
+### LASSO
 
-```{r}
+```{r LASSO Price, message = FALSE, warning = FALSE }
 set.seed(1234)
 lambda_seq <- seq(0, 0.01, length = 1000)
 train_test_split_2 <- initial_split(dataAnalysis_2, prop = 0.01)
@@ -754,7 +789,7 @@ data.frame(
 )
 ```
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 # We can check variable importance as well
 importance <- varImp(model_lm, scale = TRUE)
 plot(importance)
