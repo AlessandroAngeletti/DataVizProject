@@ -1,9 +1,23 @@
-# DataVizProject
+# Anyone Can Become a Sommelier
 
-*Group 13's Data Visualization Project*
+***
+
+*Study Group 13's Data Visualization Project*
 
 [Data Set](https://www.kaggle.com/zynicide/wine-reviews) - Wine Reviews
 
+_Grüner Veltliner, Rioja, Bourgeuil, or Cabernet Sauvignon?_
+
+On average, six out of ten Brits wish they knew more about wine, with over half so overwhelmed by their lack of knowledge that they leave wine-related decisions to someone else. However, this doesn't have to be the case especially when you're out on a date. 
+
+The dataset we are investigating was originally scraped from [WineEnthusiast](https://www.winemag.com/?s=&drink_type=wine) in November, 2017. We analyse information on 129,971 reviews (score points) on 708 varieties of wine as well as their prices and origin (country and winery) to answer the following questions - 
+(1) What makes a wine good? 
+(2) What makes a wine pricey?
+(3) Is a more expensive wine necessarily a better wine? 
+Therefore, this data offers some great opportunities to improve our understanding of wines, or at least give us enough "knowledge" to order one which is good-quality and a bang for the buck. 
+
+To achieve the aforementioned objectives and make further visualizations more meaningful we first inspect, clean and explore (ICE) the data. This includes getting rid of unnecessary columns, checking for errors and outliers through boxplots, and duplicate values. Further, we resolve the `country` missing values by matching wines to the same wineries and extracting the countries from wherever possible.   
+ 
 ## Objectives
 
 * Visualize the geographic original of the wines available in the data set;
