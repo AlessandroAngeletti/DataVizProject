@@ -94,11 +94,12 @@ Through the inspection, we find:
 - `variety`: 1 blank, this column will be fixed right away
 
 > *data type:*
->
-- `country`: should be a catergorical variable.
+
+- `country`: should be a categorical variable.
+
 
 > *weird values, errors, and outliers:*
->
+
 - `price` appears to have an outlier.
 - `points` falls in a reasonable range between 80 and 100, which does not need to be further modified.
 - `description` is very imformative but contains too many different types of values.
@@ -201,14 +202,14 @@ word_cloud <- aa_df %>%
 ```{r clean data 3, echo = FALSE, message = FALSE, warning = FALSE}
 
 clean2 <- clean1 %>% 
-  # remove the irrelevant, unfixable columns
+  # Remove the irrelevant, unfixable columns
   select(-c(region_1, region_2, taster_twitter_handle)) %>% 
   filter(
     !is.na(price),
     !is.na(points),
     !is.na(country)
   ) %>% 
-  # extract values from titles
+  # Extract values from titles
   mutate(
     company = str_extract(title, '\\D*(?=\\d)'),
     year = as.double(trimws(gsub("[^0-9]", "",  title))),
@@ -219,7 +220,7 @@ clean2 <- clean1 %>%
       )
      # Missing the info after the numbers
     ) %>% 
-  # modify the data type of country
+  # Modify the data type of country
   mutate(country = as.factor(country))
 
 ```
@@ -227,7 +228,7 @@ clean2 <- clean1 %>%
 ## Exploratory Data Analysis
 
 ```{r EDA, warning = FALSE, message = FALSE}
-#
+
 select_c <- c("Engalnd",
               "Austria",
               "Germany",
@@ -307,7 +308,7 @@ price_points <- clean2 %>%
     axis.text = element_text(face = "bold", size = 10),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    axis.title.x = element_text(face = "italic", vjust = -0.5)
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
     text = element_text(family = "Century Gothic")
   ) 
 
@@ -548,12 +549,12 @@ dataAnalysis <- clean2 %>%
 ols_model <- lm(points ~ price, dataAnalysis)
 summary(ols_model)
 
-# R-Squared of: 0.2815
+# R-Squared of: 0.2934
 
 ols_model2 <- lm(points ~ price + log(price), dataAnalysis)
 summary(ols_model2)
 
-# R-Squared of: 0.3268 
+# R-Squared of: 0.3498 
 
 anova(ols_model, ols_model2)
 # Our model improved as the p-value (2.2e-16) is far below alpha
@@ -561,49 +562,49 @@ anova(ols_model, ols_model2)
 ols_model3 <- lm(points ~ price + log(price) + country, dataAnalysis)
 summary(ols_model3)
 
-# R-Squared of: 0.3381
+# R-Squared of: 0.3616
 
 ols_model4 <- lm(points ~ price + log(price) + country + year, dataAnalysis)
 summary(ols_model4)
 ols_model4b <- lm(points ~ log(price) + country + year, dataAnalysis)
 summary(ols_model4b)
 
-# R-Squared of: 0.3437
-# R-Squared of: 0.3519
+# R-Squared of: 0.3733
+# R-Squared of: 0.3723
 
 ols_model5 <- lm(points ~ log(price) + country + year + taster_name, dataAnalysis)
 summary(ols_model5)
 
-# R-Squared of: 0.3779 
+# R-Squared of: 0.4031 
 
 ols_model6 <- lm(points ~ price + log(price) + country + year + variety, dataAnalysis)
 summary(ols_model6)
 
-# R-squared of: 0.3734
+# R-squared of: 0.3958
 
 ols_model6b <- lm(points ~ price + log(price) + country + year*variety, dataAnalysis)
 summary(ols_model6b)
 
-# R-squared of: 0.3787
+# R-squared of: 0.3996
 
 ols_model7 <- lm(points ~ price + log(price) + country + year + province, dataAnalysis)
 summary(ols_model7)
 
-# R-squared of: 0.3714 
+# R-squared of: 0.3954 
 
 ols_model8 <- lm(points ~ price + log(price) + country + year*province, dataAnalysis)
 summary(ols_model8)
 
-# R-squared of: 0.3797 
+# R-squared of: 0.4031 
 
-ols_model8 <- lm(points ~ price + log(price) + country + year*province + year*variety, dataAnalysis)
-summary(ols_model8)
-
-# R-squared of: 0.4020 
-
-ols_model9 <- lm(points ~ log(price) + country + year*province + year*variety, dataAnalysis)
+ols_model9 <- lm(points ~ price + log(price) + country + year*province + year*variety, dataAnalysis)
 summary(ols_model9)
-# R-squared of: 0.4019
+
+# R-squared of: 0.4237 
+
+ols_model10 <- lm(points ~ log(price) + country + year*province + year*variety, dataAnalysis)
+summary(ols_model10)
+# R-squared of: 0.4234
 
 anova(ols_model, ols_model2, ols_model3, ols_model4)
 # Our model improved as the p-value (2.2e-16) is far below alpha
@@ -631,7 +632,7 @@ print(plsFit)
 # 4.63334  0.281012  1.87919
 ```
 
-###LASSO
+### LASSO
 
 ```{r LASSO Scores, message = FALSE, warning = FALSE}
 set.seed(1234)
@@ -659,6 +660,7 @@ data.frame(
   RMSE = RMSE(predictions, testing$points),
   Rsquare = R2(predictions, testing$points)
 )
+```
 
 ## Regression for Price
 
@@ -684,59 +686,57 @@ dataAnalysis_2 <- clean2 %>%
 ols_model_1 <- lm(price ~ points, dataAnalysis_2)
 summary(ols_model_1)
 
-# R-Squared of: 0.2771
+# R-Squared of: 0.2822
 
 ols_model_2 <- lm(price ~ log(points), dataAnalysis_2)
 summary(ols_model_2)
 
-# R-Squared of: 0.2729
+# R-Squared of: 0.2779
 
 ols_model_3 <- lm(price ~ I(points^2), dataAnalysis_2)
 summary(ols_model_3)
 
-# R-Squared of: 0.2811
+# R-Squared of: 0.2863
 
 ols_model_4 <- lm(price ~ I(points^2) + province, dataAnalysis_2)
 summary(ols_model_4)
 
-# Adjusted R-Squared of: 0.3346
+# Adjusted R-Squared of: 0.3387
 
 ols_model_5 <- lm(price ~ I(points^2) + year, dataAnalysis_2)
 summary(ols_model_5)
 
-# Adjusted R-Squared of: 0.2976
+# Adjusted R-Squared of: 0.3014
 
 ols_model_6 <- lm(price ~ I(points^2) + variety, dataAnalysis_2)
 summary(ols_model_6)
 
-# Adjusted R-Squared of: 0.4284
+# Adjusted R-Squared of: 0.4312
 
 ols_model_7 <- lm(price ~ I(points^2) + taster_name, dataAnalysis_2)
 summary(ols_model_7)
 
-# Adjusted R-Squared of: 0.3291 
+# Adjusted R-Squared of: 0.3332
 
 ols_model_8 <- lm(price ~ I(points^2) + variety + province, dataAnalysis_2)
 summary(ols_model_8)
 
-# Adjusted R-Squared of: 0.4415
+# Adjusted R-Squared of: 0.4441
 
 ols_model_9 <- lm(price ~ I(points^2) + variety + province + year, dataAnalysis_2)
 summary(ols_model_9)
 
-# Adjusted R-Squared of: 0.4436
+# Adjusted R-Squared of: 0.4459
 
 ols_model_10 <- lm(price ~ I(points^2) + variety*year + province*year, dataAnalysis_2)
 summary(ols_model_10)
 
-# Adjusted R-Squared of: 0.4508 
+# Adjusted R-Squared of: 0.453 
 
 anova(ols_model_6, ols_model_8, ols_model_9, ols_model_10)
 # Our model improved as the p-value (2.2e-16) is far below alpha
 
-#ols_model_10 is chosen as the R-squared is the highest
-
-
+# Ols_model_10 is chosen as the R-squared is the highest
 ```
 
 ### K-Fold
@@ -758,7 +758,6 @@ plsFit_2 <- train(
 print(plsFit_2)
 
 # Adjusted R-squared: 0.4392636
-
 ```
 
 ### LASSO
@@ -789,10 +788,4 @@ data.frame(
   RMSE = RMSE(predictions, testing_2$points),
   Rsquare = R2(predictions, testing_2$points)
 )
-```
-
-```{r, message = FALSE, warning = FALSE}
-# We can check variable importance as well
-importance <- varImp(model_lm, scale = TRUE)
-plot(importance)
 ```
