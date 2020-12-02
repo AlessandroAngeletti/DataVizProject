@@ -202,14 +202,14 @@ word_cloud <- aa_df %>%
 ```{r clean data 3, echo = FALSE, message = FALSE, warning = FALSE}
 
 clean2 <- clean1 %>% 
-  # remove the irrelevant, unfixable columns
+  # Remove the irrelevant, unfixable columns
   select(-c(region_1, region_2, taster_twitter_handle)) %>% 
   filter(
     !is.na(price),
     !is.na(points),
     !is.na(country)
   ) %>% 
-  # extract values from titles
+  # Extract values from titles
   mutate(
     company = str_extract(title, '\\D*(?=\\d)'),
     year = as.double(trimws(gsub("[^0-9]", "",  title))),
@@ -220,7 +220,7 @@ clean2 <- clean1 %>%
       )
      # Missing the info after the numbers
     ) %>% 
-  # modify the data type of country
+  # Modify the data type of country
   mutate(country = as.factor(country))
 
 ```
@@ -228,7 +228,7 @@ clean2 <- clean1 %>%
 ## Exploratory Data Analysis
 
 ```{r EDA, warning = FALSE, message = FALSE}
-#
+
 select_c <- c("Engalnd",
               "Austria",
               "Germany",
@@ -308,7 +308,7 @@ price_points <- clean2 %>%
     axis.text = element_text(face = "bold", size = 10),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
-    axis.title.x = element_text(face = "italic", vjust = -0.5)
+    axis.title.x = element_text(face = "italic", vjust = -0.5),
     text = element_text(family = "Century Gothic")
   ) 
 
@@ -660,6 +660,7 @@ data.frame(
   RMSE = RMSE(predictions, testing$points),
   Rsquare = R2(predictions, testing$points)
 )
+```
 
 ## Regression for Price
 
@@ -735,9 +736,7 @@ summary(ols_model_10)
 anova(ols_model_6, ols_model_8, ols_model_9, ols_model_10)
 # Our model improved as the p-value (2.2e-16) is far below alpha
 
-#ols_model_10 is chosen as the R-squared is the highest
-
-
+# Ols_model_10 is chosen as the R-squared is the highest
 ```
 
 ### K-Fold
@@ -759,7 +758,6 @@ plsFit_2 <- train(
 print(plsFit_2)
 
 # Adjusted R-squared: 0.4392636
-
 ```
 
 ### LASSO
@@ -790,10 +788,4 @@ data.frame(
   RMSE = RMSE(predictions, testing_2$points),
   Rsquare = R2(predictions, testing_2$points)
 )
-```
-
-```{r, message = FALSE, warning = FALSE}
-# We can check variable importance as well
-importance <- varImp(model_lm, scale = TRUE)
-plot(importance)
 ```
