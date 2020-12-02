@@ -230,7 +230,7 @@ selection_of_countries = c("Germany", "Austria")
 
 points_hist <- clean2 %>% 
   ggplot() +
-  geom_histogram(aes(x = points), fill = "#49CFAE", binwidth = 0.8)+
+  geom_histogram(aes(x = points), fill = "#49CFAE", binwidth = 1)+
   theme_minimal() +
   labs(y = "",
        x = "Point Score of Wines",
@@ -409,7 +409,6 @@ df1 <- prop.table(df)
 
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
-
 # GGally
 
 ```{r}
