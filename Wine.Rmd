@@ -88,7 +88,7 @@ Through the inspection, we find:
 
 > *data type:*
 
-- `country`: should be a catergorical variable.
+- `country`: should be a categorical variable.
 - 
 
 > *weird values, errors, and outliers:*
