@@ -61,7 +61,7 @@ head(original_data)
 describe(original_data) 
 
 # Check for duplicates
-get_dupes(original_data)
+original_data <- original_data[!duplicated(original_data$description), ]
 
 # Check data types
 glimpse(original_data)
@@ -211,6 +211,7 @@ word_cloud <- aa_df %>%
   ggplot(aes(x = factor(words, levels = words[order(-freq)]), y = freq)) +
   wordcloud(aa_df$words, aa_df$freq, max.words = 10, color = "red")
 ```
+
 ## Exploratory Data Analysis
 
 ```{r, warning = FALSE, message = FALSE}
@@ -273,9 +274,27 @@ price_hist
 # Scatter plot of Price v Points
 price_points <- clean2 %>% 
   filter(price < 155) %>% 
-  ggplot(aes(x = (price), y = (points))) +
-  geom_point() + 
-  geom_smooth(method = lm)
+  ggplot(aes(x = price, y = points,)) +
+  geom_point(alpha = 0.05, color = "#583d72") + 
+  geom_smooth(method = lm,
+              formula = y ~ log(x),
+              colour = "#f05454",
+              size = 2
+              ) +
+  theme_minimal() +
+  labs(title = "Points and Price are Related Logarithmically!",
+       subtitle = "Regression of Points Against Price",
+       x = "Price",
+       y = "Ratings"
+       ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12),
+    axis.text = element_text(face = "bold", size = 10),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.title.x = element_text(face = "italic", vjust = -0.5)
+  )
 
 price_points
 
@@ -287,7 +306,7 @@ ReviewData <- clean2 %>%
          cumsum_reviews = cumsum(percent_of_reviews))
 
 dist_plot <- ReviewData %>% 
-  head(5) %>%
+  head(10) %>%
   mutate(country = as_factor(country)) %>% 
   ggplot(aes(y = reorder(country, tot), x = tot)) +
   geom_col(stat = "identity", fill = "#F14F62") + 
@@ -362,35 +381,33 @@ score_by_country <- clean2 %>%
   
 score_by_country
 
-selection_of_countries = c("US", "Israel", "Australia", "France", "Hungary")
+down_side = c("Israel", "France", "US", "Australia")
+up_side = c("Italy", "Germany", "Austria", "Hungary", "Canada")
 
 violin_plot <- clean2 %>% 
-  group_by(country) %>%
   filter(country %in% select_c) %>%
-  mutate(options = ifelse(country %in% selection_of_countries, T, F)) %>% 
-  ggplot(aes(x = points,
-             y = country,
-             fill = options)) +
+  mutate(colouring = ifelse(country %in% up_side, T, F)) %>%
+  ggplot(aes(x = points, y = reorder(country, colouring), fill = colouring)) +
   geom_density_ridges(alpha = 0.75) +
   theme_ridges() + 
   theme(legend.position = "none",
-        axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.y = element_blank(),
         plot.title = element_text(face = "bold", size = 16, vjust = 3),
         plot.subtitle = element_text(face = "italic", size = 12, vjust = 3)
-    ) +
-  labs(title = "Avoid Picking the Bad Blue Wines!",
-       subtitle = "Avoid Downside Tail Risk by Selection Blue Wines",
-       x = "",
+        ) +
+  labs(title = "Avoid Picking the Risky Reds!",
+       subtitle = "Avoid Downside Tail Risk by Selecting the Green Countries",
+       x = "Rating",
        y = ""
        ) +
-  scale_color_manual(values = c("#D55E00", "#0072B2"), guide = "none")
+  geom_vline(xintercept = 85, linetype = "dashed", color = "black", size = 1) +
+  geom_vline(xintercept = 91, linetype = "dashed", color = "black", size = 1) +
+  scale_fill_manual(values = c("#d35d6e", "#61b15a")) +
+  geom_text(x = 82, y = .7, label = "Bottom 16%", size = 4.5, color = "grey50", color = "grey50") +
+  geom_text(x = 93, y = .7, label = "Top 16%", size = 4.5, color = "grey50", color = "grey50")
 
-violin_plot
+violin_plot 
 
 avg_price_all <- clean2 %>% 
   group_by(country) %>%
@@ -409,6 +426,22 @@ df1 <- prop.table(df)
 
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
+
+```{r, echo = FALSE}
+library(writexl)
+ReviewData <- clean2 %>% 
+  group_by(country) %>% 
+    summarise(tot = n(),
+              wineries = n_distinct(winery)) %>% 
+  arrange(desc(tot)) %>% 
+  mutate(percent_of_reviews = round(tot / sum(tot), digits = 4),
+         cumsum_reviews = cumsum(percent_of_reviews))
+ReviewData
+
+write_xlsx(ReviewData, "~\\ExcelFile.xlsx")
+```
+
+
 # GGally
 
 ```{r}
@@ -491,7 +524,7 @@ clean2 %>%
 ```{r}
 dataAnalysis <- clean2 %>% 
   filter(price < 156,
-         country %in% c("Spain", "Italy", "Portugal", "US"),
+         country %in% c("Spain", "Italy", "Portugal", "US", "France"),
          year > 0
          ) %>% 
   mutate(
@@ -617,10 +650,4 @@ data.frame(
   RMSE = RMSE(predictions, testing$points),
   Rsquare = R2(predictions, testing$points)
 )
-```
-
-```{r}
-# We can check variable importance as well
-importance <- varImp(ols_model9, scale = TRUE)
-plot(importance7)
 ```
