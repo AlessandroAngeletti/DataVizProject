@@ -625,3 +625,138 @@ data.frame(
 importance <- varImp(ols_model9, scale = TRUE)
 plot(importance7)
 ```
+
+##OLS Regression for Price - Chris
+
+```{r}
+
+dataAnalysis_2 <- clean2 %>% 
+  filter(price < 156,
+         country %in% c("Spain", "Italy", "Portugal", "US"),
+         year > 0
+         ) %>% 
+  mutate(
+    points = as.integer(points),
+    price = as.integer(price),
+    winery = as.factor(winery),
+    province = as.factor(province),
+    variety = as.factor(variety),
+    taster_name = as.factor(taster_name),
+    year = as.integer(year)
+  )
+
+ols_model_1 <- lm(price ~ points, dataAnalysis_2)
+summary(ols_model_1)
+
+# R-Squared of: 0.2771
+
+ols_model_2 <- lm(price ~ log(points), dataAnalysis_2)
+summary(ols_model_2)
+
+# R-Squared of: 0.2729
+
+ols_model_3 <- lm(price ~ I(points^2), dataAnalysis_2)
+summary(ols_model_3)
+
+# R-Squared of: 0.2811
+
+ols_model_4 <- lm(price ~ I(points^2) + province, dataAnalysis_2)
+summary(ols_model_4)
+
+# Adjusted R-Squared of: 0.3346
+
+ols_model_5 <- lm(price ~ I(points^2) + year, dataAnalysis_2)
+summary(ols_model_5)
+
+# Adjusted R-Squared of: 0.2976
+
+ols_model_6 <- lm(price ~ I(points^2) + variety, dataAnalysis_2)
+summary(ols_model_6)
+
+# Adjusted R-Squared of: 0.4284
+
+ols_model_7 <- lm(price ~ I(points^2) + taster_name, dataAnalysis_2)
+summary(ols_model_7)
+
+# Adjusted R-Squared of: 0.3291 
+
+ols_model_8 <- lm(price ~ I(points^2) + variety + province, dataAnalysis_2)
+summary(ols_model_8)
+
+# Adjusted R-Squared of: 0.4415
+
+ols_model_9 <- lm(price ~ I(points^2) + variety + province + year, dataAnalysis_2)
+summary(ols_model_9)
+
+# Adjusted R-Squared of: 0.4436
+
+ols_model_10 <- lm(price ~ I(points^2) + variety*year + province*year, dataAnalysis_2)
+summary(ols_model_10)
+
+# Adjusted R-Squared of: 0.4508 
+
+anova(ols_model_6, ols_model_8, ols_model_9, ols_model_10)
+# Our model improved as the p-value (2.2e-16) is far below alpha
+
+#ols_model_10 is chosen as the R-squared is the highest
+
+
+```
+
+## K-Fold
+
+```{r}
+control <- trainControl (
+    method = "cv",
+    number = 5,
+    verboseIter = TRUE) #by setting this to true the model will report its progress after each estimation
+
+#we are going to train the model and report the results using k-fold cross validation
+plsFit_2 <- train(
+  price ~ I(points^2) + variety*year + province*year,
+  dataAnalysis_2,
+  method = "lm",
+  trControl = control
+  )
+
+print(plsFit_2)
+
+# Adjusted R-squared: 0.4392636
+
+```
+
+## LASSO
+
+```{r}
+set.seed(1234)
+lambda_seq <- seq(0, 0.01, length = 1000)
+train_test_split_2 <- initial_split(dataAnalysis_2, prop = 0.01)
+training_2 <- training(train_test_split_2)
+testing_2 <- testing(train_test_split_2)
+
+lasso <- train(
+ price ~ I(points^2) + variety*year + province*year,
+ data = training_2,
+ method = "glmnet",
+  preProc = c("center", "scale"), # This option standardizes the data before running the LASSO regression
+  trControl = control,
+  tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq) # Alpha=1 specifies to run a LASSO regression. If alpha=0 the model would run ridge regression.
+  )
+
+coef(lasso$finalModel, lasso$bestTune$lambda)
+#lasso$bestTune$lambda
+
+predictions <- predict(lasso,testing_2)
+
+# Model prediction performance
+data.frame(
+  RMSE = RMSE(predictions, testing_2$points),
+  Rsquare = R2(predictions, testing_2$points)
+)
+```
+
+```{r}
+# We can check variable importance as well
+importance <- varImp(model_lm, scale = TRUE)
+plot(importance)
+```
