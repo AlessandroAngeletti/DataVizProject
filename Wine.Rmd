@@ -47,7 +47,14 @@ loadfonts(device = "pdf")
 
 # Background
 
-> Why are we visualizing this dataset? what do we want to get out of it?
+> Wine appears in our everyday life, so do the questions arising with it: 
+- what wine should I choose for a date/friend reunion? 
+- what wine should I pick from the duty free shops at airports? 
+- Should I base my purchase decision on price or other things, like country origin or year? 
+- ...
+- *What should I do if I am not a master of wine?*
+>
+> To solve this daily question, we decide to pull our data analytics skill set. Using the wine dataset from [Kaggle](https://www.kaggle.com/zynicide/wine-reviews/) with 130k wine ratings, we aim to establish a quick understanding of the essence of pricing and rating of wine. By the end, we will be able to grasp the general picture of wine around the globe, the basics of wine pricing strategy, the key metrics that make a wine good, and a final list of wine recommendation. We invite you to take a short journey through a series of visualizations of our findings with us. 
 
 # Load & inspect Data
 
@@ -517,7 +524,7 @@ paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 
 # Data Analysis - Predicting Price and Score
 
-> After cleaning the data, we would like first to see what are the correlations between each factor of wines.
+> After cleaning the data, we would like to create regression models to help us predict the price and score. In doing so, we would gain more knowledge in understanding what the key metrics that influence a wine's price and rating are.
 
 ## Regression - Scores
 
@@ -525,10 +532,13 @@ paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 
 ```{r OLS Scores, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
 dataAnalysis <- clean2 %>% 
+  # use the cutoff
   filter(price < 156,
          country %in% c("Spain", "Italy", "Portugal", "US", "France"),
          year > 0
          ) %>% 
+    
+  # change the data type
   mutate(
     points = as.integer(points),
     price = as.integer(price),
@@ -538,66 +548,84 @@ dataAnalysis <- clean2 %>%
     taster_name = as.factor(taster_name)
   )
 
+# look at the explanatory power of price to score
 ols_model <- lm(points ~ price, dataAnalysis)
-summary(ols_model)
+#summary(ols_model)
 
 # R-Squared of: 0.2934
 
+# look at the explanatory power of price and log(price) to score
 ols_model2 <- lm(points ~ price + log(price), dataAnalysis)
-summary(ols_model2)
+#summary(ols_model2)
 
 # R-Squared of: 0.3498 
 
+# compare the previous two models
 anova(ols_model, ols_model2)
 # Our model improved as the p-value (2.2e-16) is far below alpha
+# log(price) is proved to be an influential metric of wine scores
 
+# test the explanatory power of power to score
 ols_model3 <- lm(points ~ price + log(price) + country, dataAnalysis)
-summary(ols_model3)
+#summary(ols_model3)
 
 # R-Squared of: 0.3616
+# country is also influential
 
+# test the explanatory power of year to score
 ols_model4 <- lm(points ~ price + log(price) + country + year, dataAnalysis)
-summary(ols_model4)
+#summary(ols_model4)
+
+# test the explanatory power without score
 ols_model4b <- lm(points ~ log(price) + country + year, dataAnalysis)
-summary(ols_model4b)
+#summary(ols_model4b)
 
 # R-Squared of: 0.3733
 # R-Squared of: 0.3723
+# price seems to be not influential
 
+# test the explanatory power of taster_name to score
 ols_model5 <- lm(points ~ log(price) + country + year + taster_name, dataAnalysis)
-summary(ols_model5)
+#summary(ols_model5)
 
 # R-Squared of: 0.4031 
 
-ols_model6 <- lm(points ~ price + log(price) + country + year + variety, dataAnalysis)
-summary(ols_model6)
+# test the explanatory power of variety instead of taster_name to score
+ols_model6 <- lm(points ~ log(price) + country + year + variety, dataAnalysis)
+#summary(ols_model6)
 
 # R-squared of: 0.3958
 
+# test the explanatory power of variet-year interaction instead of year and variety alone to score
 ols_model6b <- lm(points ~ price + log(price) + country + year*variety, dataAnalysis)
-summary(ols_model6b)
+#summary(ols_model6b)
 
 # R-squared of: 0.3996
 
+# test the explanatory power of province instead of variety to score
 ols_model7 <- lm(points ~ price + log(price) + country + year + province, dataAnalysis)
-summary(ols_model7)
+#summary(ols_model7)
 
 # R-squared of: 0.3954 
 
+# test the explanatory power of province-year interaction instead of province alone to score
 ols_model8 <- lm(points ~ price + log(price) + country + year*province, dataAnalysis)
-summary(ols_model8)
+#summary(ols_model8)
 
 # R-squared of: 0.4031 
 
+# pick the influential metrics so far
 ols_model9 <- lm(points ~ price + log(price) + country + year*province + year*variety, dataAnalysis)
-summary(ols_model9)
+#summary(ols_model9)
 
 # R-squared of: 0.4237 
 
+# pick the influential metrics without price
 ols_model10 <- lm(points ~ log(price) + country + year*province + year*variety, dataAnalysis)
-summary(ols_model10)
+#summary(ols_model10)
 # R-squared of: 0.4234
 
+# compare the first four models
 anova(ols_model, ols_model2, ols_model3, ols_model4)
 # Our model improved as the p-value (2.2e-16) is far below alpha
 ```
@@ -629,8 +657,14 @@ control <- trainControl (
 ### LASSO
 
 ```{r LASSO Scores, message = FALSE, warning = FALSE, echo= TRUE, cache = TRUE}
+
 set.seed(1234)
+# we will look for the optimal lambda in this sequence 
+# (we will try 100 different lambdas)
 lambda_seq <- seq(0, 0.01, length = 100)
+# lasso regression using k-fold cross validation to select the best lambda
+
+# split the data in testing and training
 train_test_split <- initial_split(dataAnalysis, prop = 0.01)
 training <- training(train_test_split)
 testing <- testing(train_test_split)
@@ -644,7 +678,10 @@ lasso <- train(
   tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq)
   )
 
+# Model coefficients
 coef(lasso$finalModel, lasso$bestTune$lambda)
+
+# Best lambda
 lasso$bestTune$lambda
 
 predictions <- predict(lasso, testing)
@@ -760,7 +797,13 @@ control <- trainControl (
 
 ```{r LASSO Price, message = FALSE, warning = FALSE, echo= TRUE, cache = TRUE}
 set.seed(1234)
+
+# we will look for the optimal lambda in this sequence 
+# (we will try 100 different lambdas)
 lambda_seq <- seq(0, 0.01, length = 100)
+# lasso regression using k-fold cross validation to select the best lambda
+
+# split the data in testing and training
 train_test_split_2 <- initial_split(dataAnalysis_2, prop = 0.01)
 training_2 <- training(train_test_split_2)
 testing_2 <- testing(train_test_split_2)
@@ -774,7 +817,10 @@ lasso <- train(
   tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq)
   )
 
+# Model coefficients
 coef(lasso$finalModel, lasso$bestTune$lambda)
+
+# Best lambda
 lasso$bestTune$lambda
 
 predictions <- predict(lasso,testing_2)
