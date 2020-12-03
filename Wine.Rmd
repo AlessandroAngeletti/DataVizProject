@@ -155,6 +155,8 @@ clean1 <- original_data
 
 # Fill the missing countries with our final list by wineries 
 clean1$country[is.na(clean1$country)] <- wineries_countryfinal$country[match(clean1$winery, wineries_countryfinal$winery)][which(is.na(clean1$country))]
+# Clear the R studio environment 
+rm(wineries_na_country, wineries_countrymatch, wineries_countryfinal)
 
 # Check the new status of missing values
 skim(clean1$country)
@@ -636,7 +638,11 @@ ols_model10 <- lm(points ~ log(price) + country + year*province + year*variety, 
 # compare the last four models
 anova(ols_model7, ols_model8, ols_model9, ols_model10)
 # Our model improved as the p-value (2.2e-16) is far below alpha
+
+# Ols_model9 is chosen as the R-squared is the highest
 ```
+
+> After testing regression models with different variables, we find that price, log(price), country, the year-province interaction, and year-variety interaction are the influential metrics of wine ratings.
 
 ### K-Fold
 
@@ -778,6 +784,8 @@ anova(ols_model_6, ols_model_8, ols_model_9, ols_model_10)
 # Ols_model_10 is chosen as the R-squared is the highest
 ```
 
+> After testing regression models with different variables, we find that the square of ratings, the year-province interaction, and year-variety interaction are the influential metrics of wine price.
+
 ### K-Fold
 
 ```{r K-Fold Price, message = FALSE, warning = FALSE, echo= TRUE, cache = TRUE}
@@ -842,7 +850,7 @@ data.frame(
 
 # Wine Description Analysis
 
-## Building Variables
+## Build Variables
 
 ```{r build variables, message = FALSE, warning = FALSE, echo = TRUE, cache = TRUE}
 # Using the word clouds plotted earlier, and consulting websites on wine tasting,
@@ -877,59 +885,60 @@ rich_list <- c("oaky", "rich", "cedar", "creamy", "woody", "leather", "toasty", 
 # Check for duplicates and remove
 clean2 <- clean2[!duplicated(clean2$description), ]
 
-# Create unique ID for each wine, then tokenise description variable so we can analyse each word
+# Create unique ID for each wine, then tokenize description variable so we can analyze each word
 word_description <- clean2 %>%
   dplyr::mutate(ID = row_number()) %>% 
   unnest_tokens(word, description)
 
 # Create new variables that can flag when certain words appear in the description
 characteristics <- word_description %>%
-  mutate(citrus = case_when(
-    word %in% citrus_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(berry = case_when(
-    word %in% berry_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(fruity = case_when(
-    word %in% fruity_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(sweet = case_when(
-    word %in% sweet_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(spice = case_when(
-    word %in% spice_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(herby = case_when(
-    word %in% herby_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(nutty = case_when(
-    word %in% nutty_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(crisp = case_when(
-    word %in% crisp_list ~ 1,
-    TRUE ~ 0)) %>% 
-  mutate(fresh = case_when(
-    word %in% fresh_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(coffee = case_when(
-    word %in% coffee_list ~ 1,
-    TRUE ~ 0
-  )) %>%
-  mutate(rich = case_when(
-    word %in% rich_list ~ 1,
-    TRUE ~ 0
-  ))
+  mutate(
+    citrus = case_when(
+      word %in% citrus_list ~ 1,
+      TRUE ~ 0),
+    
+    berry = case_when(
+      word %in% berry_list ~ 1,
+      TRUE ~ 0),
+    
+    fruity = case_when(
+      word %in% fruity_list ~ 1,
+      TRUE ~ 0),
+    
+    sweet = case_when(
+      word %in% sweet_list ~ 1,
+      TRUE ~ 0),
+    
+    spice = case_when(
+      word %in% spice_list ~ 1,
+      TRUE ~ 0),
+    
+    herby = case_when(
+      word %in% herby_list ~ 1,
+      TRUE ~ 0),
+    
+    nutty = case_when(
+      word %in% nutty_list ~ 1,
+      TRUE ~ 0),
+    
+    crisp = case_when(
+      word %in% crisp_list ~ 1,
+      TRUE ~ 0),
+    
+    fresh = case_when(
+      word %in% fresh_list ~ 1,
+      TRUE ~ 0),
+    
+    coffee = case_when(
+      word %in% coffee_list ~ 1,
+      TRUE ~ 0),
+    
+    rich = case_when(
+      word %in% rich_list ~ 1,
+      TRUE ~ 0))
 ```
 
-## Developing Characteristics
+## Develop Characteristics
 
 > Now that we have our variables for different wine characteristics, let's look at cleaning the 'variety' variable so that we can analyse the prominent characteristics of each wine type.
 
@@ -940,12 +949,14 @@ variety_cleaning <- clean2 %>%
   count() %>% 
   arrange(desc(n))
 
-variety_cleaning
-# These varieties are too granular, so let's group some of them together
+# There are 695 rows of variety
+# These varieties are too granular, 
+# so let's group some of them together
+rm(variety_cleaning)
 
-# Referring to wine classifications from 
+# Refer to wine classifications from 
 # https://winefolly.com/deep-dive/different-types-of-wine/ , 
-#let's clean the 'variety' into bigger aggregate groupings
+# let's clean the 'variety' into bigger aggregate groupings
 dry_white_list <- c("Chardonnay", "Sauvignon Blanc", "Pinot Grigio", "Muscadet",
                     "Silvaner", "Pinot Blanc", "White Blend", "Grüner Veltliner",
                     "Portuguese White")
@@ -959,7 +970,7 @@ dry_red_list <- c("Rioja", "Malbec", "Monastrell", "Shiraz", "Merlot",
 
 # We need to aggregate these new variables for each individual wine
 # (the data frame is still split by each word in the description variable)
-characteristics_variety1 <- characteristics %>%
+char_var1 <- characteristics %>%
   group_by(ID) %>%
   summarise(country, 
             variety, 
@@ -975,14 +986,12 @@ characteristics_variety1 <- characteristics %>%
             crisp = sum(crisp),
             fresh = sum(fresh),
             coffee = sum(coffee),
-            rich = sum(rich))
+            rich = sum(rich)) %>% 
+  # remove duplicates
+  distinct()
 
-# Check for duplicates
-characteristics_variety2 <- characteristics_variety1[!duplicated(characteristics_variety1$ID), ]
-```
-
-```{r, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
-characteristics_variety3 <- characteristics_variety2 %>% 
+# Turn the mass varieties into categories we created
+char_var2 <- char_var1 %>% 
   mutate(wine_type = case_when(
     variety %in% dry_white_list ~ "Dry White",
     variety %in% sweet_white_list ~ "Sweet White",
@@ -991,44 +1000,43 @@ characteristics_variety3 <- characteristics_variety2 %>%
     variety %in% dry_red_list ~ "Dry Red",
     TRUE ~ "NA"
   )) %>% 
-  select(country,
-         variety,
-         wine_type,
-         points, 
-         price, 
-         citrus,
-         berry,
-         fruity,
-         sweet,
-         spice,
-         herby,
-         nutty,
-         crisp,
-         fresh,
-         coffee,
-         rich)
+  select(-ID)
 
-characteristics_variety4 <- characteristics_variety3 %>%
-  mutate(wine_type = factor(wine_type, levels = c("Dry Red", "Dry White",
-                                                  "Sweet White", "Rosé", "Sparkling Wine"))) %>% 
-  pivot_longer(citrus:rich, names_to = "characteristic", values_to = "score" )
+# join the scores of characteristics from citrus package
+# clean the table
+char_var3 <- char_var2 %>%
+  mutate(wine_type = factor(wine_type, 
+                            levels = c("Dry Red", "Dry White",
+                                       "Sweet White", "Rosé", 
+                                       "Sparkling Wine"))) %>% 
+  pivot_longer(citrus:rich, 
+               names_to = "characteristic", 
+               values_to = "score" )
 
-characteristics_variety4
-
-characteristics_variety5 <- characteristics_variety4 %>%
+char_var4 <- char_var3 %>%
   filter(wine_type != "NA") %>%
   filter(characteristic != c("nutty","rich")) %>% 
   group_by(wine_type, characteristic) %>% 
-  summarise(characteristic, average_characteristic = mean(score))
+  summarise(characteristic, 
+            avg_characteristic = mean(score)) %>% 
+  distinct()
 
-characteristics_variety6 <- characteristics_variety5[!duplicated(characteristics_variety5$average_characteristic), ]
-
-characteristics_variety6
-
-plot1 <- characteristics_variety6 %>% 
-  ggplot(aes(x = average_characteristic, y = characteristic)) +
+plot1 <- char_var4 %>% 
+  ggplot(aes(x = avg_characteristic, 
+             y = characteristic)) +
   geom_col() +
-  facet_grid(~wine_type)
+  facet_grid(~wine_type) +
+  labs(title = "Pick The Wine With Your Prefered Characteristics",
+       subtitle = "Charateristics Scores by Wine Type",
+       y = NULL,
+       x = NULL) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(face = "italic", size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    text = element_text(family = "Century Gothic"))
   
 plot1
 ```
@@ -1038,155 +1046,175 @@ plot1
 > Radar plots might be better to visualise these characteristics and compare between wine types. Let's create these below
 
 ```{r radar plots, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
-characteristics_variety7 <- characteristics_variety6 %>% 
-  pivot_wider(names_from = characteristic, values_from = average_characteristic)
+char_var5 <- char_var4 %>% 
+  pivot_wider(names_from = characteristic, 
+              values_from = avg_characteristic)
 
 # Dry Red
-
-characteristics_variety_dryred<- characteristics_variety7 %>% 
+char_var_dryred <- char_var5 %>% 
   filter(wine_type == "Dry Red") %>% 
-  select(citrus,
-         berry,
-         fruity,
-         sweet,
-         spice,
-         herby,
-         crisp,
-         fresh,
-         coffee)
-  
-characteristics_variety_dryred <- characteristics_variety_dryred[2:9]
+  select(-wine_type, -rich)
 
-characteristics_variety_dryred <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_dryred)
+char_var_dryred <- char_var_dryred[2:9]
 
-p1 <- radarchart( characteristics_variety_dryred  , axistype=1 , 
+char_var_dryred <- rbind(rep(1.5, 8), 
+                         rep(0, 8), 
+                         char_var_dryred)
+
+p1 <- radarchart(char_var_dryred, axistype = 1, 
  
     # Custom polygon
-    pcol=rgb(0.6,0,0.4,0.9) , pfcol=rgb(0.6,0.2,0.4,0.5) , plwd=4 , seg = 3,
+    pcol = rgb(0.6, 0, 0.4, 0.9), 
+    pfcol = rgb(0.6, 0.2, 0.4, 0.5), 
+    plwd = 4, 
+    seg = 3,
  
     # Custom the grid
-    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+    cglcol = "grey", 
+    cglty = 1, 
+    axislabcol = "grey30", 
+    caxislabels = seq(0, 2, 0.5), 
+    cglwd = 0.8,
  
     # Custom labels
-    vlcex=0.8, title = "Dry Red" 
+    vlcex = 0.8, title = "Dry Red",
+    
+    # Custom caxislabels
+    calcex = 0.7 
     )
 
 # Dry White
-characteristics_variety_drywhite<- characteristics_variety7 %>% 
+char_var_drywhite<- char_var5 %>% 
   filter(wine_type == "Dry White") %>% 
-  select(citrus,
-         berry,
-         fruity,
-         sweet,
-         spice,
-         herby,
-         crisp,
-         fresh,
-         coffee)
+  select(-wine_type, -rich)
   
-characteristics_variety_drywhite <- characteristics_variety_drywhite[2:9]
+char_var_drywhite <- char_var_drywhite[2:9]
 
-characteristics_variety_drywhite <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_drywhite)
+char_var_drywhite <- rbind(rep(1.5, 8), 
+                           rep(0, 8), 
+                           char_var_drywhite)
 
-p2 <- radarchart( characteristics_variety_drywhite  , axistype=1 , 
+p2 <- radarchart(char_var_drywhite, axistype = 1, 
  
     # Custom polygon
-    pcol=rgb(1,0.8,0.2,0.7) , pfcol=rgb(1,1,0.6,0.4) , plwd=4 , seg = 3,
+    pcol = rgb(1, 0.8, 0.2, 0.7), 
+    pfcol = rgb(1, 1, 0.6, 0.4), 
+    plwd = 4 , 
+    seg = 3,
  
     # Custom the grid
-    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+    cglcol = "grey", 
+    cglty = 1, 
+    axislabcol = "grey30", 
+    caxislabels = seq(0, 2, 0.5), 
+    cglwd = 0.8,
  
     # Custom labels
-    vlcex=0.8, title = "Dry White" 
+    vlcex = 0.8, 
+    title = "Dry White",
+    
+    # Custom caxislabels
+    calcex = 0.7 
     )
 
 # Sweet White
-
-characteristics_variety_sweetwhite<- characteristics_variety7 %>% 
+char_var_sweetwhite<- char_var5 %>% 
   filter(wine_type == "Sweet White") %>% 
-  select(citrus,
-         berry,
-         fruity,
-         sweet,
-         spice,
-         herby,
-         crisp,
-         fresh,
-         coffee)
+  select(-wine_type, -rich)
   
-characteristics_variety_sweetwhite <- characteristics_variety_sweetwhite[2:9]
+char_var_sweetwhite <- char_var_sweetwhite[2:9]
 
-characteristics_variety_sweetwhite <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_sweetwhite)
+char_var_sweetwhite <- rbind(rep(1.5, 8), 
+                             rep(0,8), 
+                             char_var_sweetwhite)
 
-p3 <- radarchart( characteristics_variety_sweetwhite  , axistype=1 , 
+p3 <- radarchart(char_var_sweetwhite, axistype = 1, 
  
     # Custom polygon
-    pcol=rgb(1,0.8,0.2,0.7) , pfcol=rgb(1,1,0.6,0.4) , plwd=4 , seg = 3,
+    pcol = rgb(1, 0.8, 0.2, 0.7), 
+    pfcol = rgb(1, 0.9, 0.3, 0.6), 
+    plwd = 4, 
+    seg = 3,
  
     # Custom the grid
-    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+    cglcol = "grey", 
+    cglty = 1, 
+    axislabcol = "grey30", 
+    caxislabels = seq(0, 2, 0.5), 
+    cglwd = 0.8,
  
     # Custom labels
-    vlcex=0.8, title = "Sweet White" 
+    vlcex = 0.8, 
+    title = "Sweet White",
+    
+    # Custom caxislabels
+    calcex = 0.7 
     )
 
 # Rosé
-
-characteristics_variety_rose<- characteristics_variety7 %>% 
+char_var_rose <- char_var5 %>% 
   filter(wine_type == "Rosé") %>% 
-  select(citrus,
-         berry,
-         fruity,
-         sweet,
-         spice,
-         herby,
-         crisp,
-         fresh,
-         coffee)
+  select(-wine_type, -rich)
   
-characteristics_variety_rose <- characteristics_variety_rose[2:9]
+char_var_rose <- char_var_rose[2:9]
 
-characteristics_variety_rose <- rbind(rep(1.5,8) , rep(0,8) , characteristics_variety_rose)
+char_var_rose <- rbind(rep(1.5, 8),
+                       rep(0,8),
+                       char_var_rose)
 
-p4 <- radarchart( characteristics_variety_rose  , axistype=1 , 
+p4 <- radarchart(char_var_rose, axistype = 1, 
  
     # Custom polygon
-    pcol=rgb(1,0.6,0.4,0.9) , pfcol=rgb(1,0.6,0.4,0.5) , plwd=4 ,seg = 3, 
+    pcol = rgb(1, 0.6, 0.4, 0.9),
+    pfcol = rgb(1, 0.5, 0.4, 0.5), 
+    plwd = 4,
+    seg = 3, 
  
     # Custom the grid
-    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+    cglcol = "grey", 
+    cglty = 1, 
+    axislabcol = "grey30", 
+    caxislabels = seq(0, 2, 0.5), 
+    cglwd = 0.8,
  
     # Custom labels
-    vlcex=0.8, title = "Rosé" 
+    vlcex = 0.8, 
+    title = "Rosé",
+    
+    # Custom caxislabels
+    calcex = 0.7
     )
 
 # Sparkling Wine
-
-characteristics_variety_sparkling<- characteristics_variety7 %>% 
+char_var_sparkling <- char_var5 %>% 
   filter(wine_type == "Sparkling Wine") %>% 
-  select(citrus,
-         berry,
-         fruity,
-         sweet,
-         spice,
-         herby,
-         crisp,
-         fresh,
-         coffee)
+  select(-wine_type, -rich)
   
-characteristics_variety_sparkling <- characteristics_variety_sparkling[2:9]
+char_var_sparkling <- char_var_sparkling[2:9]
 
-characteristics_variety_sparkling <- rbind(rep(2,8) , rep(0,8) , characteristics_variety_sparkling)
+char_var_sparkling <- rbind(rep(2, 8),
+                            rep(0, 8),
+                            char_var_sparkling)
 
-p5 <- radarchart( characteristics_variety_sparkling  , axistype=1 , 
+p5 <- radarchart(char_var_sparkling, axistype = 1, 
  
     # Custom polygon
-    pcol=rgb(0.7,0.5,0.1,0.9) , pfcol=rgb(0.7,0.5,0.1,0.4) , plwd=4 ,seg = 3, 
+    pcol = rgb(0.7, 0.5, 0.1, 0.9),
+    pfcol = rgb(0.7, 0.5, 0.1, 0.4),
+    plwd = 4,
+    seg = 3, 
  
     # Custom the grid
-    cglcol="grey", cglty=1, axislabcol="grey30", caxislabels=seq(0,2,0.5), cglwd=0.8,
+    cglcol = "grey", 
+    cglty = 1, 
+    axislabcol = "grey30", 
+    caxislabels = seq(0, 2, 0.5), 
+    cglwd = 0.8,
  
     # Custom labels
-    vlcex=0.8, title = "Sparkling Wine"
+    vlcex = 0.8, title = "Sparkling Wine",
+    
+    # Custom caxislabels
+    calcex = 0.7
     )
 ```
