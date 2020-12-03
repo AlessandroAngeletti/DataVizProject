@@ -108,6 +108,14 @@ Through the inspection, we find:
 > **Data type:**
 
 - `country`: should be a categorical variable.
+- `points`: should be integer.
+- `price`: should be integer.
+- `province`: should be a categorical variable.
+- `variety`: should be a categorical variable.
+- `winery`: should be a categorical variable.
+- `taster_name`: should be a categorical variable.
+
+These data types will be fixed whenever needed.
 
 > **Weird values, errors, and outliers:**
 
@@ -625,8 +633,8 @@ ols_model10 <- lm(points ~ log(price) + country + year*province + year*variety, 
 #summary(ols_model10)
 # R-squared of: 0.4234
 
-# compare the first four models
-anova(ols_model, ols_model2, ols_model3, ols_model4)
+# compare the last four models
+anova(ols_model7, ols_model8, ols_model9, ols_model10)
 # Our model improved as the p-value (2.2e-16) is far below alpha
 ```
 
@@ -715,52 +723,52 @@ dataAnalysis_2 <- clean2 %>%
   )
 
 ols_model_1 <- lm(price ~ points, dataAnalysis_2)
-summary(ols_model_1)
+#summary(ols_model_1)
 
 # R-Squared of: 0.2822
 
 ols_model_2 <- lm(price ~ log(points), dataAnalysis_2)
-summary(ols_model_2)
+#summary(ols_model_2)
 
 # R-Squared of: 0.2779
 
 ols_model_3 <- lm(price ~ I(points^2), dataAnalysis_2)
-summary(ols_model_3)
+#summary(ols_model_3)
 
 # R-Squared of: 0.2863
 
 ols_model_4 <- lm(price ~ I(points^2) + province, dataAnalysis_2)
-summary(ols_model_4)
+#summary(ols_model_4)
 
 # Adjusted R-Squared of: 0.3387
 
 ols_model_5 <- lm(price ~ I(points^2) + year, dataAnalysis_2)
-summary(ols_model_5)
+#summary(ols_model_5)
 
 # Adjusted R-Squared of: 0.3014
 
 ols_model_6 <- lm(price ~ I(points^2) + variety, dataAnalysis_2)
-summary(ols_model_6)
+#summary(ols_model_6)
 
 # Adjusted R-Squared of: 0.4312
 
 ols_model_7 <- lm(price ~ I(points^2) + taster_name, dataAnalysis_2)
-summary(ols_model_7)
+#summary(ols_model_7)
 
 # Adjusted R-Squared of: 0.3332
 
 ols_model_8 <- lm(price ~ I(points^2) + variety + province, dataAnalysis_2)
-summary(ols_model_8)
+#summary(ols_model_8)
 
 # Adjusted R-Squared of: 0.4441
 
 ols_model_9 <- lm(price ~ I(points^2) + variety + province + year, dataAnalysis_2)
-summary(ols_model_9)
+#summary(ols_model_9)
 
 # Adjusted R-Squared of: 0.4459
 
 ols_model_10 <- lm(price ~ I(points^2) + variety*year + province*year, dataAnalysis_2)
-summary(ols_model_10)
+#summary(ols_model_10)
 
 # Adjusted R-Squared of: 0.453 
 
@@ -836,11 +844,11 @@ data.frame(
 
 ## Building Variables
 
-```{r, message = FALSE, warning = FALSE, echo = TRUE, cache = TRUE}
+```{r build variables, message = FALSE, warning = FALSE, echo = TRUE, cache = TRUE}
 # Using the word clouds plotted earlier, and consulting websites on wine tasting,
 # let's create some key characteristics to comment on for wines, and develop
-#lists with other words that are similar.
-# We will use these to gain insight into the information containted in the description column
+# lists with other words that are similar.
+# We will use these to gain insight into the information contained in the description column
 
 citrus_list <- c("citrus", "orange", "lemon", "lime", "citric", "grapefruit", "mandarin",
                  "yuzu", "rind", "pith", "tangerine", "zesty", "zestiness", "citrusy", "tangy")
@@ -925,7 +933,7 @@ characteristics <- word_description %>%
 
 > Now that we have our variables for different wine characteristics, let's look at cleaning the 'variety' variable so that we can analyse the prominent characteristics of each wine type.
 
-```{r, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
+```{r develope characteristics, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
 # Let's inspect the variety variable
 variety_cleaning <- clean2 %>%
   group_by(variety) %>% 
@@ -936,8 +944,8 @@ variety_cleaning
 # These varieties are too granular, so let's group some of them together
 
 # Referring to wine classifications from 
-# https://winefolly.com/deep-dive/different-types-of-wine/ , let's clean the
-# 'variety' into bigger aggregate groupings
+# https://winefolly.com/deep-dive/different-types-of-wine/ , 
+#let's clean the 'variety' into bigger aggregate groupings
 dry_white_list <- c("Chardonnay", "Sauvignon Blanc", "Pinot Grigio", "Muscadet",
                     "Silvaner", "Pinot Blanc", "White Blend", "Grüner Veltliner",
                     "Portuguese White")
@@ -1029,7 +1037,7 @@ plot1
 
 > Radar plots might be better to visualise these characteristics and compare between wine types. Let's create these below
 
-```{r, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
+```{r radar plots, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
 characteristics_variety7 <- characteristics_variety6 %>% 
   pivot_wider(names_from = characteristic, values_from = average_characteristic)
 
