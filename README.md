@@ -23,42 +23,12 @@ Next, we examine the distribution of prices and scores across parameters like ge
 
 **Regression Models**
 For regression analysis, we decided to stick to the data pertaining to top 5 countries with wine reviews i.e. US, France, Italy, Spain and Portugal, and limit the price threshold to **$156.** By comparing model performance in terms of adjusted R-squared across multiple models, we were able to identify the best-ones to predict `price` and `rating` -
+
 > rating = a + b(1)log(price) + b(i)country(i) + year*province(i) + year*variety(i)
 
 > price = a + b(1)points^2 + b(i)country(i) + year*province(i) + year*variety(i)
 
-Finally, one of our ultimate objectives was to identify certain words, associated with different varieties of wines, that a person can use to appear knowledgeable on the subject. 
+Finally, one of our ultimate objectives was to identify certain words, associated with different varieties of wines, that a person can use to appear knowledgeable on the subject. For instance, dry reds and roses are more fruity with hints of berry whereas sweet, dry or sparkling wines are more crisp with citrus notes. 
 
 **Conclusion**
-
-## Objectives
-
-* Visualize the geographic original of the wines available in the data set;
-* Discover how price correlates with the rating of the wine;
-* How the description of the wine correlates to its geographical location;
-* If the price is impacted by the variety of grape used; and
-* How price is influenced by its description, variety, location, etc.
-
-## Visalusations
-
-1) Map plots;
-2) Scatter plots;
-3) Cluster analyses;
-4) Distributions; and
-5) Word banks.
-
-## Guidelines
-
-DATAVIS GROUP  PROJECT 
-1. Load and inspect data (vroom, skim)
-2. Clean data - variable types, null values, missing values, outliers, categorical variables (cross column sense check)
-3. Look for trends and relations (histograms, scatter plots, correlation matrices) 
-4. Feature engineering? (like cumulative_14_day_cases in covid data) - look into new columns we can create
-5. Visualisations (at least 3 different types of charts - let's do a map as well hehe)
-6. Focus on a story throughout + conclusion
-
-DELIVERABLES 
-1. Group presentation to be uploaded on canvas
-2. Github repo + public repo with readme file
-3. One page description of project + questions we're trying to answer
-4. Rmd file
+Although we have devoted a significant portion of our time to cleaning the dataset and extracting insights on different varieties of wines and our analysis therefore provides a decent guide to different wines, it isn't completely exhaustive. Our dataset is not representative of world population of wines. Moreover, we derive our insights from reviews and points provided by different tasters all of whom are not professionals. Even if they were, these reviews and descriptions are subjective and open to bias.  
