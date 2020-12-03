@@ -17,9 +17,9 @@ Therefore, we attempt to identify the factors which contribute to a wine being g
 To achieve the aforementioned objectives and make further visualizations more meaningful we first inspect, clean and explore (ICE) the data. This includes getting rid of unnecessary columns, duplicate values, and checking for errors and outliers through boxplots. Further, we resolve the missing values in `country` and `variety` by matching information on wines from the same wineries and extracting information from the corresponding `description` wherever possible. In addition, the description (though complex to clean) gives a lot of insights on the region-specific characteristics of wines. For example, French wines are most frequently associated with words such as rich, crisp, acid, fruit, ripe, fresh, etc.
 
 Next, we examine the distribution of prices and scores across parameters like geographical location and find out that:
-- our dataset is majorly dominated by reviews of wines from the US
-- wines from England have the highest average rating
-- wines from Germany and Austria are the safest bet as their median scores are fairly high
+- Our dataset is majorly dominated by reviews of wines from the US
+- Wines from England have the highest average rating
+- Wines from Germany and Austria are the safest bet as their median scores are fairly high
 
 **Regression Models**
 For regression analysis, we decided to stick to the data pertaining to top 5 countries with wine reviews i.e. US, France, Italy, Spain and Portugal, and limit the price threshold to **$156.** By comparing model performance in terms of adjusted R-squared across multiple models, we were able to identify the best-ones to predict `price` and `rating` -
@@ -50,15 +50,15 @@ Finally, one of our ultimate objectives was to identify certain words, associate
 ## Guidelines
 
 DATAVIS GROUP  PROJECT 
-1. load and inspect data (vroom, skim)
-2. clean data - variable types, null values, missing values, outliers, categorical variables (cross column sense check)
-3. look for trends and relations (histograms, scatter plots, correlation matrices) 
-4. feature engineering? (like cumulative_14_day_cases in covid data) - look into new columns we can create
-5. visualisations (at least 3 different types of charts - let's do a map as well hehe)
-6. focus on a story throughout + conclusion
+1. Load and inspect data (vroom, skim)
+2. Clean data - variable types, null values, missing values, outliers, categorical variables (cross column sense check)
+3. Look for trends and relations (histograms, scatter plots, correlation matrices) 
+4. Feature engineering? (like cumulative_14_day_cases in covid data) - look into new columns we can create
+5. Visualisations (at least 3 different types of charts - let's do a map as well hehe)
+6. Focus on a story throughout + conclusion
 
 DELIVERABLES 
-1. group presentation to be uploaded on canvas
-2. github repo + public repo with readme file
-3. one page description of project + questions we're trying to answer
-4. rmd file
+1. Group presentation to be uploaded on canvas
+2. Github repo + public repo with readme file
+3. One page description of project + questions we're trying to answer
+4. Rmd file
