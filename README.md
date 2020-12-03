@@ -24,9 +24,9 @@ Next, we examine the distribution of prices and scores across parameters like ge
 **Regression Models:**
 For regression analysis, we decided to stick to the data pertaining to top 5 countries with wine reviews i.e. US, France, Italy, Spain and Portugal, and limit the price threshold to **$156.** By comparing model performance in terms of adjusted R-squared across multiple models, we were able to identify the best-ones to predict `price` and `rating` -
 
-> rating = a + b(1)log(price) + b(i)country(i) + year*province(i) + year*variety(i)
+$rating = \alpha + \beta_1 log(price) + \beta_i country_i + year_i province_i + year_i variety_i$
 
-> price = a + b(1)points^2 + b(i)country(i) + year*province(i) + year*variety(i)
+$price = \alpha + \beta_i points^2 + \beta_i country_i + year_i province_i + year_i variety_i$
 
 Finally, one of our ultimate objectives was to identify certain words, associated with different varieties of wines, that a person can use to appear knowledgeable on the subject. For instance, dry reds and roses are more fruity with hints of berry whereas sweet, dry or sparkling wines are more crisp with citrus notes. 
 
