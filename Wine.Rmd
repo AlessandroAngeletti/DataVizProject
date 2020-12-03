@@ -47,18 +47,17 @@ loadfonts(device = "pdf")
 
 # Background
 
-> Wine appears in our everyday life, so do the questions arising with it: 
-- what wine should I choose for a date/friend reunion? 
-- what wine should I pick from the duty free shops at airports? 
-- Should I base my purchase decision on price or other things, like country origin or year? 
-- ...
-- *What should I do if I am not a master of wine?*
+> Grüner Veltliner, Rioja, Bourgeuil, or Cabernet Sauvignon?
 >
-> To solve this daily question, we decide to pull our data analytics skill set. Using the wine dataset from [Kaggle](https://www.kaggle.com/zynicide/wine-reviews/) with 130k wine ratings, we aim to establish a quick understanding of the essence of pricing and rating of wine. By the end, we will be able to grasp the general picture of wine around the globe, the basics of wine pricing strategy, the key metrics that make a wine good, and a final list of wine recommendation. We invite you to take a short journey through a series of visualizations of our findings with us. 
+> On average, six out of ten Brits wish they knew more about wine, with over half so overwhelmed by their lack of knowledge that they leave wine-related decisions to someone else. However, this doesn't have to be the case especially when you're out on a date.
+>
+>The data Set we are investigating was originally scraped from WineEnthusiast in November, 2017. We analyse information on 129,971 reviews (score points) on 708 varieties of wine as well as their prices and origin (country and winery) to answer the following questions - (1) What makes a wine good? (2) What makes a wine pricey? (3) Is a more expensive wine necessarily a better wine? Therefore, this data offers some great opportunities to improve our understanding of wines, or at least give us enough "knowledge" to order one which is good-quality and a bang for the buck.
+>
+>We invite you to take a short journey through a series of visualizations of our findings with us. 
 
 # Load & inspect Data
 
-> We would like to inspect the dataset in the following orders:
+> In the preliminary step of data analytics/visualization, we need to ICE(inspect, clean, explore) the data. To begin with, we would like to inspect the dataset in the following orders:
 
 1. Missing, empty, and duplicated values;
 1. Data types; and
@@ -260,8 +259,6 @@ word_cloud <- aa_df %>%
   wordcloud(aa_df$words, aa_df$freq, max.words = 10, color = "red")
 ```
 
-## Exploratory Data Analysis
-
 ```{r clean data 3, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
 
 clean2 <- clean1 %>% 
@@ -286,6 +283,10 @@ clean2 <- clean1 %>%
   # Modify the data type of country
   mutate(country = as.factor(country))
 ```
+
+## Exploratory Data Analysis
+
+> Now coming to the final step of ICE, we will generate a series of visualiztions to grasp the general findings of our cleaned dataset.
 
 ```{r EDA, message = FALSE, warning = FALSE, echo = FALSE, cache = TRUE}
 # Scaled Distribution of scores(points)
@@ -532,15 +533,15 @@ df1 <- prop.table(df)
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
 
-# Data Analysis - Predicting Price and Score
+# Wine Price and Score Prediction
 
-> After cleaning the data, we would like to create regression models to help us predict the price and score. In doing so, we would gain more knowledge in understanding what the key metrics that influence a wine's price and rating are.
+> With some basic knowledge on the wine, we would like to create regression models to help us predict the price and score. In doing so, we would gain more knowledge in understanding what the key metrics that influence a wine's price and rating are.
 
 ## Regression - Scores
 
 ### OLS
 
-```{r OLS Scores, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
+```{r OLS Scores, message = FALSE, warning = FALSE, echo = FALSE, cache = TRUE}
 dataAnalysis <- clean2 %>% 
   # use the cutoff
   filter(price < 156,
