@@ -14,7 +14,7 @@ output:
     fontzize: 10 pt
 ---
 
-```{r, setup, include = FALSE}
+```{r, setup, include = FALSE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 # Load the relevant libraries
 library(tidyverse)
@@ -102,7 +102,6 @@ Through the inspection, we find:
 
 - `country`: should be a categorical variable.
 
-
 > **Weird values, errors, and outliers:**
 
 - `price` appears to have an outlier.
@@ -157,6 +156,7 @@ clean1 <- clean1 %>%
                             TRUE ~ variety 
                             ))
 
+# Check for the new status of missing variety
 skim(clean1$variety)
 
 ```
@@ -164,11 +164,21 @@ skim(clean1$variety)
 ### Clean Description
 
 ```{r clean data 2, message = FALSE, warning = FALSE, echo = TRUE, cache = TRUE}
+# Since the description column is really messy
+# let's pick a country's description to check
+# Pull the description out into a new list
 input_words <- clean1$description[clean1$country == "France"]
 
+# Take a grouping of texts and make each element of the resulting vector a document 
 input_words <- VectorSource(input_words)
+# Take a source object and make it volatile corpora
+# A corpus is a collection of documents
+# Since the object is volatile, 
+# all changes only affect the corresponding R object
 input_words <- VCorpus(input_words)
 
+# As we want to extract the descriptive words of wine
+# We must get irrelevant words out of the way
 irrelevant_words <- c("wine", "winery", "it", "green", "winemaking", "winemark",
                       "without", "alcohol", "although", "across", "age", "almost",
                       "along", "also", "amount", "alongsid", "anoth", "approach",
@@ -194,6 +204,8 @@ irrelevant_words <- c("wine", "winery", "it", "green", "winemaking", "winemark",
                       "<e2><80><93>", "<c3><a8>dr", "<c3><a9>" ,"aroma", "flavor",
                       "autolyt", "serious", "reson", "long", "red", "black")
 
+# tm_map allows for the application of transformation functions
+# group the function of cleaning the extracted words into a function list
 clean_words <- function(inside){
   inside <- tm_map(inside, removePunctuation)
   inside <- tm_map(inside, removeNumbers)
@@ -205,21 +217,27 @@ clean_words <- function(inside){
   return(inside)
 }
 
+# apply the function list to the extracted words
 out_clean_words <- clean_words(input_words)
 
+# create a matrix as a list object
 ocw_tdm <- TermDocumentMatrix(out_clean_words)
 
+# select the top 10 frequently appeared words for French wines
 top_10_words <- findFreqTerms(ocw_tdm, lowfreq = 3300)
 paste0("The Top 10 Words Associated to Wines in ", "France" , " are: ")
 print(top_10_words)
 
+# arrange the matrix by rowSums
 ocw_m <- as.matrix(ocw_tdm) 
 aa <- rowSums(ocw_m)
 aa <- sort(aa, decreasing = TRUE)
 
+# turn the sorted matrix into a dataframe for visualiztion
 aa_df <- data.frame(words = names(aa),
                     freq = aa)
 
+#turn words into a word cloud plot
 word_cloud <- aa_df %>%
   ggplot(aes(x = factor(words, levels = words[order(-freq)]), y = freq)) +
   wordcloud(aa_df$words, aa_df$freq, max.words = 10, color = "red")
@@ -252,21 +270,8 @@ clean2 <- clean1 %>%
   mutate(country = as.factor(country))
 ```
 
-```{r EDA, message = FALSE, warning = FALSE, echo= FALSE, cache = TRUE}
-
-select_c <- c("Engalnd",
-              "Austria",
-              "Germany",
-              "Canada",
-              "Hungary",
-              "France",
-              "Italy",
-              "Australia",
-              "US",
-              "Israel")
-
-selection_of_countries = c("Germany", "Austria")
-
+```{r EDA, message = FALSE, warning = FALSE, echo = FALSE, cache = TRUE}
+# Scaled Distribution of scores(points)
 points_hist <- clean2 %>% 
   ggplot() +
   geom_histogram(aes(x = points), fill = "#49CFAE", binwidth = 1)+
@@ -286,6 +291,7 @@ points_hist <- clean2 %>%
   ) +
   xlim(79, 100)
 
+# print the histogram
 points_hist
 
 # Scaled Distribution of prices
@@ -309,6 +315,7 @@ price_hist <- clean2 %>%
   ) +
   xlim(0, 155)
 
+# print
 price_hist
 
 # Scatter plot of Price v Points
@@ -337,8 +344,10 @@ price_points <- clean2 %>%
     text = element_text(family = "Century Gothic")
   ) 
 
+# print
 price_points
 
+# check for the countries with the most entries of wine reviews
 ReviewData <- clean2 %>% 
   group_by(country) %>% 
   summarise(tot = n()) %>% 
@@ -346,12 +355,16 @@ ReviewData <- clean2 %>%
   mutate(percent_of_reviews = round(tot / sum(tot), digits = 4),
          cumsum_reviews = cumsum(percent_of_reviews))
 
+# Barchart of countries with the most entries of wine reviews
 dist_plot <- ReviewData %>% 
   head(10) %>%
   mutate(country = as_factor(country)) %>% 
   ggplot(aes(y = reorder(country, tot), x = tot)) +
-  geom_col(stat = "identity", fill = "#F14F62") + 
-  geom_text(aes(label = sprintf("%.0f%%", 100 * percent_of_reviews), x = tot + 3000), face="bold") +
+  geom_col(stat = "identity", 
+           fill = "#F14F62") + 
+  geom_text(aes(label = sprintf("%.0f%%", 100 * percent_of_reviews), 
+                x = tot + 3000), 
+            face="bold") +
   theme_minimal() +
   labs(y = "",
        x = "Total Number of Wines",
@@ -366,19 +379,21 @@ dist_plot <- ReviewData %>%
     axis.title.x = element_text(face = "italic", vjust = -0.5),
     text = element_text(family = "Century Gothic")
   ) 
-  
+# print  
 dist_plot
 
+# compute the average scores per country
 avg_score <- clean2 %>% 
   group_by(country) %>%
   summarise(
     avg_score = mean(points),
     count = n()
   ) %>%
-  #filter(count > 50) %>% 
   arrange(desc(avg_score)) %>%
+  # select the top 10
   head(10)
 
+# Barchart of wine average scores by countries
 avg_score_plot <- avg_score %>% 
   ggplot(aes(x = reorder(country, -avg_score), y = avg_score)) + 
   geom_bar(stat = "identity", fill = "#F14F62") + 
@@ -394,15 +409,35 @@ avg_score_plot <- avg_score %>%
     plot.subtitle = element_text(face = "italic", size = 12),
     text = element_text(family = "Century Gothic")
   )
-
+# print
 avg_score_plot
 
+# for further visualization
+# it's easier to extract the top 10 countries with the most origins of wines,
+# create a list, then compare it back to the main dataset
+select_c <- c("Engalnd",
+              "Austria",
+              "Germany",
+              "Canada",
+              "Hungary",
+              "France",
+              "Italy",
+              "Australia",
+              "US",
+              "Israel")
+
+# select the two most notable countries into another list
+selection_of_countries = c("Germany", "Austria")
+
+# Boxplot of top 10 countries with wine ratings
 score_by_country <- clean2 %>% 
   filter(country %in% select_c) %>% 
   mutate(options = ifelse(country %in% selection_of_countries, T, F)) %>% 
-  ggplot(aes(x = points, y = reorder(country, points, FUN = median), color = options)) +
+  ggplot(aes(x = points, 
+             y = reorder(country, points, FUN = median), 
+             color = options)) +
   geom_boxplot() +
-  scale_color_manual(values=c("#000000", "#49CFAE")) +
+  scale_color_manual(values = c("#000000", "#49CFAE")) +
   theme_minimal() +
   stat_summary(geom = "point",
                color = "#F14F62") +
@@ -422,12 +457,16 @@ score_by_country <- clean2 %>%
     axis.title.x = element_text(face = "italic", vjust = -0.5),
     text = element_text(family = "Century Gothic")
   )
-  
+
+# print  
 score_by_country
 
+# extract the countries among the top 10 for better wine decisions
+# and the countries for relatively riskier wine decisions
 down_side = c("Israel", "France", "US", "Australia")
 up_side = c("Italy", "Germany", "Austria", "Hungary", "Canada")
 
+# Violin Plot of countries among the 10 for better wine preferences
 violin_plot <- clean2 %>% 
   filter(country %in% select_c) %>%
   mutate(colouring = ifelse(country %in% up_side, T, F)) %>%
@@ -451,9 +490,11 @@ violin_plot <- clean2 %>%
   scale_fill_manual(values = c("#d35d6e", "#61b15a")) +
   geom_text(x = 82, y = .7, label = "Bottom 16%", size = 4.5, color = "grey50", color = "grey50") +
   geom_text(x = 93, y = .7, label = "Top 16%", size = 4.5, color = "grey50", color = "grey50")
-
+# print
 violin_plot 
 
+# rank the countries by average price
+# select only the countries with more than 50 reviews
 avg_price_all <- clean2 %>% 
   group_by(country) %>%
   summarise(
@@ -463,12 +504,14 @@ avg_price_all <- clean2 %>%
   filter(count > 50) %>% 
   arrange(desc(avg_price))
 
+# create a data frame of price range
 df <- clean2 %>% 
   filter(!is.na(price))%>% 
   select(price) %>%  
   table()
 df1 <- prop.table(df) 
 
+# select a price cutoff at $155
 paste0("Portion of wines under $155: ", round(cumsum(df1)['155'] * 100, 0), "%")
 ```
 
