@@ -627,7 +627,7 @@ ols_model8 <- lm(points ~ price + log(price) + country + year*province, dataAnal
 
 # pick the influential metrics so far
 ols_model9 <- lm(points ~ price + log(price) + country + year*province + year*variety, dataAnalysis)
-#summary(ols_model9)
+summary(ols_model9)
 
 # R-squared of: 0.4237 
 
@@ -775,7 +775,7 @@ ols_model_9 <- lm(price ~ I(points^2) + variety + province + year, dataAnalysis_
 # Adjusted R-Squared of: 0.4459
 
 ols_model_10 <- lm(price ~ I(points^2) + variety*year + province*year, dataAnalysis_2)
-#summary(ols_model_10)
+summary(ols_model_10)
 
 # Adjusted R-Squared of: 0.453 
 
