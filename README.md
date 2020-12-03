@@ -21,7 +21,7 @@ Next, we examine the distribution of prices and scores across parameters like ge
 - Wines from England have the highest average rating
 - Wines from Germany and Austria are the safest bet as their median scores are fairly high
 
-**Regression Models**
+**Regression Models:**
 For regression analysis, we decided to stick to the data pertaining to top 5 countries with wine reviews i.e. US, France, Italy, Spain and Portugal, and limit the price threshold to **$156.** By comparing model performance in terms of adjusted R-squared across multiple models, we were able to identify the best-ones to predict `price` and `rating` -
 
 > rating = a + b(1)log(price) + b(i)country(i) + year*province(i) + year*variety(i)
@@ -30,5 +30,5 @@ For regression analysis, we decided to stick to the data pertaining to top 5 cou
 
 Finally, one of our ultimate objectives was to identify certain words, associated with different varieties of wines, that a person can use to appear knowledgeable on the subject. For instance, dry reds and roses are more fruity with hints of berry whereas sweet, dry or sparkling wines are more crisp with citrus notes. 
 
-**Conclusion**
+**Conclusion:**
 Although we have devoted a significant portion of our time to cleaning the dataset and extracting insights on different varieties of wines and our analysis therefore provides a decent guide to different wines, it isn't completely exhaustive. Our dataset is not representative of world population of wines. Moreover, we derive our insights from reviews and points provided by different tasters all of whom are not professionals. Even if they were, these reviews and descriptions are subjective and open to bias.  
